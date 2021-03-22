@@ -1,0 +1,8 @@
+name = "InfluenzaCore"
+uuid = "75be95bb-60e3-4423-b8b7-0f2a09593d53"
+authors = ["Jakob Nybo Nissen <jakobnybonissen@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+ErrorTypes = "7f495686-c6d2-4c77-9e8e-e4c865675f9d"
+SumTypes = "8e1ec7a9-0e02-4297-b0fe-6433085c89f2"

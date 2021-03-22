@@ -1,0 +1,4 @@
+name = "Influenza"
+uuid = "094bb4ec-04e4-4f11-bf12-e5749f7dd418"
+authors = ["Jakob Nybo Nissen <jakobnybonissen@gmail.com>"]
+version = "0.1.0"
