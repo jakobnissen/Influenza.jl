@@ -8,8 +8,8 @@ function alignment_identity(aln::PairwiseAlignment{T, T})::Option{Float64} where
     n_ident = len_query = len_subject = 0
     for (seqnt, refnt) in aln
         n_ident += seqnt == refnt
-        len_query += !is_gap(seqnt)
-        len_subject += !is_gap(refnt)
+        len_query += !isgap(seqnt)
+        len_subject += !isgap(refnt)
     end
     len_smallest = min(len_query, len_subject)
     iszero(len_smallest) && return none

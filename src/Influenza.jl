@@ -3,11 +3,10 @@ module Influenza
 using InfluenzaCore
 using BioSequences
 using BioAlignments
-using FASTX
 using ErrorTypes
 
 include("alignment.jl")
-include("utils.jl")
+include("interactive.jl")
 
 export is_stop,
     alignment_identity,

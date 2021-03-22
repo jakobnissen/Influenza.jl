@@ -2,3 +2,9 @@ name = "Influenza"
 uuid = "094bb4ec-04e4-4f11-bf12-e5749f7dd418"
 authors = ["Jakob Nybo Nissen <jakobnybonissen@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+BioAlignments = "00701ae9-d1dc-5365-b64a-a3a3ebf5695e"
+BioSequences = "7e6ae17a-c86d-528c-b3b9-7f778a29fe59"
+ErrorTypes = "7f495686-c6d2-4c77-9e8e-e4c865675f9d"
+InfluenzaCore = "75be95bb-60e3-4423-b8b7-0f2a09593d53"
