@@ -14,6 +14,6 @@ export is_stop,
     DEFAULT_AA_ALN_MODEL,
 
     # Exports from InfluenzaCore
-    Segment, Segments, SubType, SubTypes, Proteins, Protein
+    Segment, Segments, SubType, SubTypes, Proteins, Protein, source
 
 end # module

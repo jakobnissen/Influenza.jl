@@ -64,6 +64,7 @@ const _STR_PROTEINVARIANT = Dict(
     "PB1" => PB1,
     "N40" => N40,
     "PB1-F2" => PB1F2,
+    "PB1F2" => PB1F2,
     "PB1-FA" => PB1F2,
     "PA" => PA,
     "PA-X" => PAX,
@@ -89,6 +90,16 @@ using .Proteins
 function Base.parse(::Type{Protein}, s::AbstractString)::Option{Protein}
     y = get(Proteins._STR_PROTEINVARIANT, s, nothing)
     y === nothing ? none : some(y)
+end
+
+const PROTEIN_TO_SEGMENT = Tuple(UInt8[0,1,1,1,2,2,3,4,5,5,6,6,6,6,7,7,7])
+@assert length(PROTEIN_TO_SEGMENT) == length(instances(Protein))
+@assert maximum(PROTEIN_TO_SEGMENT) == length(instances(Segment)) - 1
+
+function source(x::Protein)
+    index = reinterpret(UInt8, x) + 0x01
+    integer = @inbounds PROTEIN_TO_SEGMENT[index]
+    return reinterpret(Segment, integer)
 end
 
 module SubTypes
@@ -117,6 +128,6 @@ function Base.parse(::Type{SubType}, s::AbstractString)::Option{SubType}
     some(SubTypes.InfluenzaA(H, N))
 end
 
-export Segment, Segments, SubType, SubTypes, Proteins, Protein
+export Segment, Segments, SubType, SubTypes, Proteins, Protein, source
 
 end # module
