@@ -116,7 +116,11 @@ export SubType
 end
 using .SubTypes
 
+isalpha(x::SubType) = x.data isa SubTypes.InfluenzaA
+isbeta(x::SubType) = x.data isa Union{SubTypes.Victoria, SubTypes.Yamagata}
 Base.show(io::IO, x::SubTypes.InfluenzaA) = print(io, "H$(x._1)N$(x._2)")
+Base.show(io::IO, x::SubTypes.Victoria) = print(io, "Victoria")
+Base.show(io::IO, x::SubTypes.Yamagata) = print(io, "Yamagata")
 
 function Base.parse(::Type{SubType}, s::AbstractString)::Option{SubType}
     s == "Victoria" && return some(SubTypes.Victoria())
@@ -128,6 +132,6 @@ function Base.parse(::Type{SubType}, s::AbstractString)::Option{SubType}
     some(SubTypes.InfluenzaA(H, N))
 end
 
-export Segment, Segments, SubType, SubTypes, Proteins, Protein, source
+export Segment, Segments, SubType, SubTypes, Proteins, Protein, source, isalpha, isbeta
 
 end # module
