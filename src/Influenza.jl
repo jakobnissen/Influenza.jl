@@ -5,6 +5,9 @@ using BioSequences
 using BioAlignments
 using ErrorTypes
 
+"Used for three-valued logic, in e.g. Union{Bool, Maybe}"
+struct Maybe end
+
 include("alignment.jl")
 include("interactive.jl")
 
