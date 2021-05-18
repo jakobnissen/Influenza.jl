@@ -3,7 +3,6 @@ module Influenza
 using InfluenzaCore
 using BioSequences
 using BioAlignments
-using ErrorTypes
 
 "Used for three-valued logic, in e.g. Union{Bool, Maybe}"
 struct Maybe end
@@ -17,6 +16,6 @@ export is_stop,
     DEFAULT_AA_ALN_MODEL,
 
     # Exports from InfluenzaCore
-    Segment, Segments, SubType, SubTypes, Proteins, Protein, source
+    Segment, Segments, SeroType, Proteins, Protein, source
 
 end # module

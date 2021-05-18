@@ -21,12 +21,12 @@ Check whether an amino acid sequence of HA is HPAI. Returns `nothing` if the cle
 site was not detected, `Maybe()` if the HPAI-ness cannot easily be determined, and
 a `Bool` otherwise.
 """
-function is_hpai(seq::LongAminoAcidSeq)::Union{Nothing, Maybe, Bool}
+function cleavage(seq::LongAminoAcidSeq)::Tuple{Union{Nothing, LongAminoAcidSeq}, Union{Nothing, Maybe, Bool}}
     motif = cleavage_motif(seq)
     # A nothing here means the motif was not properly detected
-    motif === nothing && return nothing
+    motif === nothing && return (nothing, nothing)
     seq, pos = motif 
-    return is_leading_hpai(seq[pos-5:pos-1])
+    return seq, is_leading_hpai(seq[pos-5:pos-1])
 end
 
 # Nothing if there is no motif, else (seq, pos_of_cleaving_R)

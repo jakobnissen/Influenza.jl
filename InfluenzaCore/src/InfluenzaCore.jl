@@ -10,9 +10,6 @@ to the most basic types.
 """
 module InfluenzaCore
 
-using ErrorTypes
-using SumTypes
-
 module Segments
 """
     Segment
@@ -26,11 +23,7 @@ end
 using .Segments
 
 const STRING_SEGMENT_DICT = Dict(string(s)=>s for s in instances(Segment))
-function Base.parse(::Type{Segment}, s::AbstractString)::Option{Segment}
-    y = get(STRING_SEGMENT_DICT, s, nothing)
-    y === nothing && return none
-    some(y)
-end
+Base.tryparse(::Type{Segment}, s::AbstractString) = get(STRING_SEGMENT_DICT, strip(s(), nothing)
 
 module Proteins
 """
@@ -87,10 +80,7 @@ export Protein
 end
 using .Proteins
 
-function Base.parse(::Type{Protein}, s::AbstractString)::Option{Protein}
-    y = get(Proteins._STR_PROTEINVARIANT, s, nothing)
-    y === nothing ? none : some(y)
-end
+Base.tryparse(::Type{Protein}, s::AbstractString) = get(Proteins._STR_PROTEINVARIANT, strip(s), nothing)
 
 const PROTEIN_TO_SEGMENT = Tuple(UInt8[0,1,1,1,2,2,3,4,5,5,6,6,6,6,7,7,7])
 @assert length(PROTEIN_TO_SEGMENT) == length(instances(Protein))
@@ -102,36 +92,25 @@ function source(x::Protein)
     return reinterpret(Segment, integer)
 end
 
-module SubTypes
-using SumTypes
-
-@sum_type SubType begin
-    Yamagata()
-    Victoria()
-    InfluenzaA(::UInt8, ::UInt8)
+struct SeroType
+    h::Union{Nothing, UInt8}
+    n::Union{Nothing, UInt8}
 end
 
-InfluenzaA(H::Integer, N::Integer) = InfluenzaA(UInt8(H), UInt8(N))
-export SubType
+function Base.show(io::IO, x::SeroType)
+    dummy(x) = isnothing(x) ? '0' : x
+    print(io, 'H', dummy(x.h), 'N', dummy(x.n))
+    return nothing
 end
-using .SubTypes
 
-isalpha(x::SubType) = x.data isa SubTypes.InfluenzaA
-isbeta(x::SubType) = x.data isa Union{SubTypes.Victoria, SubTypes.Yamagata}
-Base.show(io::IO, x::SubTypes.InfluenzaA) = print(io, "H$(x._1)N$(x._2)")
-Base.show(io::IO, x::SubTypes.Victoria) = print(io, "Victoria")
-Base.show(io::IO, x::SubTypes.Yamagata) = print(io, "Yamagata")
-
-function Base.parse(::Type{SubType}, s::AbstractString)::Option{SubType}
-    s == "Victoria" && return some(SubTypes.Victoria())
-    s == "Yamagata" && return some(SubTypes.Yamagata())
-    m = match(r"^H(\d+)N(\d+)$", s)
+function Base.tryparse(::Type{SeroType}, x::AbstractString)
+    m = match(r"^H(\d+)N(\d+)$", x)
     m === nothing && return none
     H = parse(UInt8, m[1]::SubString{String})
     N = parse(UInt8, m[2]::SubString{String})
-    some(SubTypes.InfluenzaA(H, N))
+    return SeroType(H, N)
 end
 
-export Segment, Segments, SubType, SubTypes, Proteins, Protein, source, isalpha, isbeta
+export Segment, Segments, SeroType, Proteins, Protein, source, isalpha, isbeta
 
 end # module
