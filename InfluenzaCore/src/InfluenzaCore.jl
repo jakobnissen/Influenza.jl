@@ -23,7 +23,7 @@ end
 using .Segments
 
 const STRING_SEGMENT_DICT = Dict(string(s)=>s for s in instances(Segment))
-Base.tryparse(::Type{Segment}, s::AbstractString) = get(STRING_SEGMENT_DICT, strip(s(), nothing)
+Base.tryparse(::Type{Segment}, s::AbstractString) = get(STRING_SEGMENT_DICT, strip(s), nothing)
 
 module Proteins
 """
