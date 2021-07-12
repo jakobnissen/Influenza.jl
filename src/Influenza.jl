@@ -3,12 +3,12 @@ module Influenza
 using InfluenzaCore
 using BioSequences
 using BioAlignments
+using ErrorTypes
 
 "Used for three-valued logic, in e.g. Union{Bool, Maybe}"
 struct Maybe end
 
 include("alignment.jl")
-include("interactive.jl")
 
 export is_stop,
     alignment_identity,
