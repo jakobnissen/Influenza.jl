@@ -10,7 +10,8 @@ to the most basic types.
 """
 module InfluenzaCore
 
-module Segments
+baremodule Segments
+import Base: @enum, @doc
 """
     Segment
 
@@ -25,7 +26,8 @@ using .Segments
 const STRING_SEGMENT_DICT = Dict(string(s)=>s for s in instances(Segment))
 Base.tryparse(::Type{Segment}, s::AbstractString) = get(STRING_SEGMENT_DICT, strip(s), nothing)
 
-module Proteins
+baremodule Proteins
+import Base: @enum, @doc, Dict, =>
 """
     Protein
 
@@ -92,9 +94,25 @@ function source(x::Protein)
     return reinterpret(Segment, integer)
 end
 
+"""
+SeroType
+
+Influenza A are separated into serotypes, based on their HA and NA proteins.
+The H and Ns are indicated by a natural number (1, 2, 3...), or may optionally
+be `nothing` (missing types conventionally written as 0).
+"""
 struct SeroType
     h::Union{Nothing, UInt8}
     n::Union{Nothing, UInt8}
+
+    function SeroType(h_, n_)
+        h = convert(Union{Nothing, UInt8}, h_)
+        n = convert(Union{Nothing, UInt8}, n_)
+        if (h !== nothing && iszero(h)) || (n !== nothing && iszero(n))
+            throw(DomainError(0x00, "Serotypes must be nonzero"))
+        end
+        new(h, n)
+    end
 end
 
 function Base.show(io::IO, x::SeroType)
@@ -105,12 +123,14 @@ end
 
 function Base.tryparse(::Type{SeroType}, x::AbstractString)
     m = match(r"^H(\d+)N(\d+)$", x)
-    m === nothing && return none
+    m === nothing && return nothing
     H = parse(UInt8, m[1]::SubString{String})
+    H = iszero(H) ? nothing : H
     N = parse(UInt8, m[2]::SubString{String})
+    N = iszero(N) ? nothing : N
     return SeroType(H, N)
 end
 
-export Segment, Segments, SeroType, Proteins, Protein, source, isalpha, isbeta
+export Segment, Segments, SeroType, Proteins, Protein, source
 
 end # module

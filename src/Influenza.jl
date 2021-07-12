@@ -12,6 +12,7 @@ include("alignment.jl")
 
 export is_stop,
     alignment_identity,
+    cleavage,
     DEFAULT_DNA_ALN_MODEL,
     DEFAULT_AA_ALN_MODEL,
 

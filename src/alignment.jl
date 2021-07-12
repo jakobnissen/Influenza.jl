@@ -7,7 +7,7 @@ is_stop(x::DNACodon) = (x === mer"TAA") | (x === mer"TAG") | (x === mer"TGA")
 function alignment_identity(aln::PairwiseAlignment{T, T})::Option{Float64} where {T <: BioSequence}
     n_ident = len_query = len_subject = 0
     for (seqnt, refnt) in aln
-        n_ident += seqnt == refnt
+        n_ident += !(isgap(seqnt) || isgap(refnt)) && seqnt == refnt
         len_query += !isgap(seqnt)
         len_subject += !isgap(refnt)
     end
@@ -17,8 +17,10 @@ function alignment_identity(aln::PairwiseAlignment{T, T})::Option{Float64} where
 end
 
 """
-Check whether an amino acid sequence of HA is HPAI. Returns `nothing` if the cleavage
-site was not detected, `Maybe()` if the HPAI-ness cannot easily be determined, and
+Check whether an amino acid sequence of HA is HPAI. Returns a tuple of the cleavage site,
+and a marker of whether the site is HPAI.
+The marker is `nothing` if the cleavage site was not detected,
+`Maybe()` if the HPAI-ness cannot easily be determined, and
 a `Bool` otherwise.
 """
 function cleavage(seq::LongAminoAcidSeq)::Tuple{Union{Nothing, LongAminoAcidSeq}, Union{Nothing, Maybe, Bool}}
