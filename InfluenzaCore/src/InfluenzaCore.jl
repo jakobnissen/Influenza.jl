@@ -1,7 +1,8 @@
 """
     InfluenzaCore
 
-This module defines only *core types* for the other Influenza packages.
+This module defines only *core types* and basic functionality associated with
+these types for use in other Influenza software.
 It is *not* meant to be external, application-faced, nor is it meant to include
 functions and algorithms for interactive use.
 
@@ -15,8 +16,14 @@ import Base: @enum, @doc
 """
     Segment
 
-An `Enum` representing an Influenza genomic segment. It is ordered from longest (PB2)
-to shortest (NS), as per canonical ordering.
+An `Enum` representing an Influenza genomic segment of influenza A and B.
+It is ordered from longest (PB2) to shortest (NS), as per canonical ordering.
+
+# Examples
+```julia-repl
+julia> tryparse(Segment, "PB1")
+PB1::Segment = 0x01
+```
 """
 @enum Segment::UInt8 PB2 PB1 PA HA NP NA MP NS
 export Segment
@@ -31,8 +38,14 @@ import Base: @enum, @doc, Dict, =>
 """
     Protein
 
-An `Enum` representing an influenza protein. Not all virions have all proteins, some are
-auxiliary or specific to some species of influenza.
+An `Enum` representing an influenza protein of influenza A or B. Not all virions
+have all proteins, some are auxiliary or specific to some species of influenza.
+
+# Examples
+```julia-repl
+julia> tryparse(Protein, "PA-X")
+PAX::Protein = 0x05
+```
 """
 @enum Protein::UInt8 begin
     PB2
@@ -88,6 +101,11 @@ const PROTEIN_TO_SEGMENT = Tuple(UInt8[0,1,1,1,2,2,3,4,5,5,6,6,6,6,7,7,7])
 @assert length(PROTEIN_TO_SEGMENT) == length(instances(Protein))
 @assert maximum(PROTEIN_TO_SEGMENT) == length(instances(Segment)) - 1
 
+"""
+    source(x::Protein)
+
+Get the segment that encodes the given protein.
+"""
 function source(x::Protein)
     index = reinterpret(UInt8, x) + 0x01
     integer = @inbounds PROTEIN_TO_SEGMENT[index]
@@ -100,6 +118,18 @@ SeroType
 Influenza A are separated into serotypes, based on their HA and NA proteins.
 The H and Ns are indicated by a natural number (1, 2, 3...), or may optionally
 be `nothing` (missing types conventionally written as 0).
+
+# Examples
+```julia-repl
+julia> SeroType(1, 2)
+H1N2
+
+julia> SeroType(5, nothing)
+H5N0
+
+julia> tryparse(SeroType, "H0N8")
+H0N8
+```
 """
 struct SeroType
     h::Union{Nothing, UInt8}
