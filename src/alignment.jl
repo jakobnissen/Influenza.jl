@@ -1,10 +1,32 @@
+"""
+    DEFAULT_DNA_ALN_MODEL
+
+Affine Gap Score model with parameters empirically chosen to strike a sensible balance between indels and substitutions for DNA alignments.
+"""
 const DEFAULT_DNA_ALN_MODEL = AffineGapScoreModel(EDNAFULL, gap_open=-25, gap_extend=-2)
+
+"""
+    DEFAULT_AA_ALN_MODEL
+
+Affine Gap Score model with parameters empirically chosen to strike a sensible balance between indels and substitutions for amino acid alignments.
+"""
 const DEFAULT_AA_ALN_MODEL = AffineGapScoreModel(BLOSUM62, gap_open=-10, gap_extend=-2)
 
+"""
+    is_stop(x::DNACodon)
+
+Return whether the DNA Codon (a 3-mer) is TAA, TAG or TGA.
+"""
 is_stop(x::DNACodon) = (x === mer"TAA") | (x === mer"TAG") | (x === mer"TGA")
 
-"Alignment is calulated as n_matches divided by the length of the shortest seq"
-function alignment_identity(aln::PairwiseAlignment{T, T})::Option{Float64} where {T <: BioSequence}
+"""
+    alignment_identity(::PairwiseAlignment)
+
+Calculate the alignment identity between two sequences. Alignment is calculated as n_matches divided by the ungapped length of the shortest seq. Places where both sequences are gapped do not count as matches.
+
+If the shorter seq has zero length, returns `nothing`.
+"""
+function alignment_identity(aln::PairwiseAlignment{T, T}) where {T <: BioSequence}
     n_ident = len_query = len_subject = 0
     for (seqnt, refnt) in aln
         n_ident += !(isgap(seqnt) || isgap(refnt)) && seqnt == refnt
@@ -12,18 +34,24 @@ function alignment_identity(aln::PairwiseAlignment{T, T})::Option{Float64} where
         len_subject += !isgap(refnt)
     end
     len_smallest = min(len_query, len_subject)
-    iszero(len_smallest) && return none
-    return some(n_ident / len_smallest)
+    iszero(len_smallest) && return nothing
+    return n_ident / len_smallest
 end
 
 """
-Check whether an amino acid sequence of HA is HPAI. Returns a tuple of the cleavage site,
-and a marker of whether the site is HPAI.
-The marker is `nothing` if the cleavage site was not detected,
-`Maybe()` if the HPAI-ness cannot easily be determined, and
-a `Bool` otherwise.
+    ha0_cleavage(::LongAminoAcidSeq)
+
+Detects and returns the HA0 cleavage site. Returns a tuple `(site, is_hpai)`, where:
+* `site` is a `LongAminoAcidSeq` if a site was found, otherwise `nothing`.
+* `is_hpai` is `nothing` if `site` is, `Maybe()` if the pathogenicity cannot be determined, `true` if it is HPAI, and `false` if it is LPAI.
+
+# Examples
+```julia-repl
+julia> ha0_cleavage(aa"LATGLRNSPLREKRRKRGLFGAIAGFIEGGW")
+(PLREKRRKRGLF, true)
+```
 """
-function cleavage(seq::LongAminoAcidSeq)::Tuple{Union{Nothing, LongAminoAcidSeq}, Union{Nothing, Maybe, Bool}}
+function ha0_cleavage(seq::LongAminoAcidSeq)::Tuple{Union{Nothing, LongAminoAcidSeq}, Union{Nothing, Maybe, Bool}}
     motif = cleavage_motif(seq)
     # A nothing here means the motif was not properly detected
     motif === nothing && return (nothing, nothing)
