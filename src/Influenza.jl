@@ -8,7 +8,6 @@ module Influenza
 using InfluenzaCore
 using BioSequences
 using BioAlignments
-using ErrorTypes
 
 "Singleton struct used for three-valued logic, in e.g. Union{Bool, Maybe}"
 struct Maybe end
