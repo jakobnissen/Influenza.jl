@@ -12,6 +12,8 @@ using BioAlignments
 "Singleton struct used for three-valued logic, in e.g. Union{Bool, Maybe}"
 struct Maybe end
 
+foobar() = 2
+
 include("alignment.jl")
 
 export is_stop,
