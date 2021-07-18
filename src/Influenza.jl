@@ -5,6 +5,8 @@ It is distinct from `InfluenzaCore` in that it is a more heavyweight dependency,
 """
 module Influenza
 
+using ErrorTypes
+using FASTX
 using InfluenzaCore
 using BioSequences
 using BioAlignments
@@ -12,8 +14,7 @@ using BioAlignments
 "Singleton struct used for three-valued logic, in e.g. Union{Bool, Maybe}"
 struct Maybe end
 
-foobar() = 2
-
+include("assembly.jl")
 include("alignment.jl")
 
 export is_stop,
