@@ -11,18 +11,20 @@ using InfluenzaCore
 using BioSequences
 using BioAlignments
 using Serialization
+using Printf
 
 imap(f) = x -> Iterators.map(f, x)
 ifilter(f) = x -> Iterators.filter(f, x)
 
 const INFLUENZA_VERSION = let
-    project = joinpath(dirname(dirname(pathof(Influenza))), "Project.toml")
+    p = pathof(Influenza)::String
+    project = joinpath(dirname(dirname(p)), "Project.toml")
     toml = read(project, String)
-    m = match(r"(*ANYCRLF)^version\s*=\s\"(.*)\"$"m, toml)
-    VersionNumber(m[1])
+    m = match(r"(*ANYCRLF)^version\s*=\s\"(.*)\"$"m, toml)::RegexMatch
+    VersionNumber(m[1]::SubString{String})
 end
 
-"Singleton struct used for three-valued logic, in e.g. Union{Bool, Maybe}"
+"Singleton struct used for three-valued logic, in e.g. `Union{Bool, Maybe}`"
 struct Maybe end
 
 include("assembly.jl")
@@ -30,11 +32,13 @@ include("alignment.jl")
 include("serialization.jl")
 include("blast.jl")
 
-export is_stop,
+export Assembly,
+    AssemblyProtein,
+    Reference,
+    AlignedAssembly,
+
     alignment_identity,
     ha0_cleavage,
-    DEFAULT_DNA_ALN_MODEL,
-    DEFAULT_AA_ALN_MODEL,
     store_references,
     load_references,
     annotate,

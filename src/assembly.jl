@@ -1,3 +1,31 @@
+# Protein errors
+"Struct representing an indel compared to the reference"
+struct Indel
+    # range: Position in ref (del) or asm (ins) of bases affected
+    range::UnitRange{UInt32}
+    # position: seq aligns between pos and pos+1 in the other seq
+    position::UInt32
+    is_deletion::Bool
+
+    function Indel(range, pos, isdel)
+        rng = convert(UnitRange{UInt32}, range)
+        isempty(rng) && throw(ArgumentError("Cannot have zero-length indel"))
+        new(rng, convert(UInt32, pos), convert(Bool, isdel))
+    end
+end
+
+Base.length(x::Indel) = length(x.range)
+
+function indel_message(x::Indel)
+    rangestring = string(first(x.range)) * '-' * string(last(x.range))
+    posstring = string(x.position) * '/' * string(x.position + 1)
+    if x.is_deletion
+        "Deletion of ref pos " * rangestring * " b/w pos " * posstring
+    else
+        "Insertion of bases " * rangestring * " b/w ref pos " * posstring
+    end
+end
+
 abstract type InfluenzaError end
 abstract type SegmentError <: InfluenzaError end
 abstract type ProteinError <: InfluenzaError end
@@ -7,9 +35,18 @@ struct ErrorLowIdentity <: InfluenzaError
     identity::Float32
 end
 
+function Base.print(io::IO, x::ErrorLowIdentity)
+    percent = round(x.identity * 100, digits=1)
+    print(io, "Identity to reference low at ", percent, " %")
+end
+
 "Too many bases are insignificantly called in the sequence"
 struct ErrorInsignificant <: SegmentError
     n_insignificant::UInt32
+end
+
+function Base.print(io::IO, x::ErrorInsignificant)
+    print(io, "Sequence has ", x.n_insignificant, " insignificant bases")
 end
 
 "Too many bases or amino acids are ambiguous"
@@ -17,9 +54,18 @@ struct ErrorAmbiguous <: SegmentError
     n_ambiguous::UInt32
 end
 
+function Base.print(io::IO, x::ErrorAmbiguous)
+    print(io, "Sequence has ", x.n_ambiguous, " ambiguous bases")
+end
+
 "Mean depth across sequence is too low"
 struct ErrorLowDepth <: SegmentError
     depth::Float32
+end
+
+function Base.print(io::IO, x::ErrorLowDepth)
+    n = Printf.@sprintf("%.4e", x.depth)
+    print(io, "Depth is low at ", n)
 end
 
 "Fraction of reference covered by reads/query is too low"
@@ -27,15 +73,47 @@ struct ErrorLowCoverage <: SegmentError
     coverage::Float32
 end
 
+function Base.print(io::IO, x::ErrorLowCoverage)
+    n = @sprintf("%.4e", x.coverage)
+    print(io, "Coverage is low at ", n)
+end
+
 "N'th round of assembly is too different from N-1'th round"
 struct ErrorAssemblyNotConverged <: SegmentError
     identity::Float32
 end
 
+function Base.print(io::IO, x::ErrorAssemblyNotConverged)
+    percent = round(x.identity * 100, digits=1)
+    print(io, "Assembly not converged, at ", percent, " % identity")
+end
+
 "Sequence is flanked by invalid sequences - probably linkers or primers"
 struct ErrorLinkerContamination <: SegmentError
-    fiveprime:: Union{Nothing, UnitRange{UInt32}}
-    threeprime::Union{Nothing, UnitRange{UInt32}}
+    fiveprime:: Union{Nothing, UInt32}
+    threeprime::Union{Nothing, UInt32}
+
+    function ErrorLinkerContamination(fiveprime, threeprime)
+        fp = convert(Union{Nothing, UInt32}, fiveprime)
+        tp = convert(Union{Nothing, UInt32}, threeprime)
+        if fp === tp === nothing
+            throw(ArgumentError("Both fields cannot be `nothing`"))
+        end
+        new(fp, tp)
+    end
+end
+
+function Base.print(io::IO, x::ErrorLinkerContamination)
+    s = "Linker/primer contamination at ends, check "
+    both = (x.fiveprime !== nothing) & (x.threeprime !== nothing)
+    if x.fiveprime !== nothing
+        s *= "first " * string(x.fiveprime) * " bases"
+    end
+    if x.threeprime !== nothing
+        both && (s *= " and ")
+        s *= "last " * string(x.threeprime) * " bases"
+    end
+    print(io, s)
 end
 
 "The segment is missing a non-auxiliary protein"
@@ -43,20 +121,17 @@ struct ErrorMissingProtein <: SegmentError
     protein::Protein
 end
 
-# Protein errors
-"Struct representing an indel compared to the reference"
-struct Indel
-    # range: Position in ref (del) or asm (ins) of bases affected
-    range::UnitRange{UInt32}
-    # position: seq aligns between pos and pos+1 in the other seq
-    position::UInt32
-    is_deletion::Bool
+function Base.print(io::IO, x::ErrorMissingProtein)
+    print(io, "Missing non-auxiliary protein: \"", x.protein, '\"')
 end
 
-Base.length(x::Indel) = length(x.range)
-
+"Frameshift mutation"
 struct ErrorFrameShift <: ProteinError
     indel::Indel
+end
+
+function Base.print(io::IO, x::ErrorFrameShift)
+    print(io, "Frameshift: ", indel_message(x.indel))
 end
 
 "Too many indels in sequence - alignment probably went wrong"
@@ -64,14 +139,26 @@ struct ErrorTooManyIndels <: ProteinError
     indels::Vector{Indel}
 end
 
+function Base.print(io::IO, x::ErrorTooManyIndels)
+    print(io, "Too many indels, found ", length(x.indels), " indels")
+end
+
 "An indel is too big to be biologically plausible, or needs special attention"
 struct ErrorIndelTooBig <: ProteinError
     indel::Indel
 end
 
+function Base.print(io::IO, x::ErrorIndelTooBig)
+    print(io, "Indel too big: ", indel_message(x.indel))
+end
+
 "5' end of protein is deleted. This rarely happens naturally, and merits special attention"
 struct ErrorFivePrimeDeletion <: ProteinError
     indel::Indel
+end
+
+function Base.print(io::IO, x::ErrorFivePrimeDeletion)
+    print(io, "Deletion of ", length(x.x), " bases at 5' end")
 end
 
 "Frameshift or substitution added a stop codon too early compared to reference"
@@ -84,6 +171,15 @@ struct ErrorEarlyStop <: ProteinError
     observed_naa::UInt32
 end
 
+function Base.print(io::IO, x::ErrorEarlyStop)
+    print(
+        io,
+        "Protein stops early at segment pos ", x.observed_pos,
+        " after ", x.observed_naa, " aa, reference is ",
+        x.expected_naa, " aa"
+    )
+end
+
 "Stop codon is mutated, protein stops later than expected"
 struct ErrorLateStop <: ProteinError
     expected_pos::UInt32
@@ -92,12 +188,37 @@ struct ErrorLateStop <: ProteinError
     observed_naa::UInt32
 end
 
+function Base.print(io::IO, x::ErrorLateStop)
+    print(
+        io,
+        "Protein stops late at segment pos ", x.observed_pos,
+        " after ", x.observed_naa, " aa, reference stops at ",
+        x.expected_stop, " after ", x.expected_naa, " aa"
+    )
+end
+
 "ORF runs over edge of DNA sequence"
 struct ErrorNoStop <: ProteinError end
+
+function Base.print(io::IO, x::ErrorNoStop)
+    print(io, "No stop codon")
+end
 
 "Length of coding sequence is not divisible by 3."
 struct ErrorCDSNotDivisible <: ProteinError
     len::UInt32
+
+    function ErrorCDSNotDivisible(x)
+        len = convert(UInt32, x)
+        if iszero(len % 3)
+            throw(ArgumentError("Length must not be divisible by 3"))
+        end
+        new(len)
+    end
+end
+
+function Base.print(io::IO, x::ErrorCDSNotDivisible)
+    print(io, "CDS has length ", x.len, ", not divisible by 3")
 end
 
 """
@@ -127,7 +248,9 @@ function ReferenceProtein(
 end
 
 """
-    A Reference that an assembly can be compared against
+A Reference that an assembly can be compared against.
+
+A reference holds a name, a segment, a DNA sequence, and a vector of `ReferenceProtein`, which gives the proteins encoded by the segment and their open reading frames.
 """
 struct Reference
     name::String
@@ -136,13 +259,37 @@ struct Reference
     proteins::Vector{ReferenceProtein}
 end
 
+"""
+A DNA sequence representing an influenza segment.
+
+Assemblies consists of a name, a DNA sequence, and optionally a `Segment` and a
+bitvector, signifying the bases that are insignificantly called.
+
+# Examples
+```
+julia> asm = Assembly("myseq", dna"ACC")
+Assembly("myseq", ACC, none(Segment), none(BitVector))
+
+julia> asm = Assembly("myseq2", dna"TC", some(Segments.PB1), some(trues(3)))
+Assembly("myseq2", TC, some(InfluenzaCore.Segments.PB1), some(Bool[1, 1, 1]))
+```
+"""
 struct Assembly
     name::String
+    seq::LongDNASeq
     # none means unknown
     segment::Option{Segment}
     # none means no bases are insignificant, or unknown
     insignificant::Option{BitVector}
-    seq::LongDNASeq
+end
+
+function Assembly(name::AbstractString, seq::BioSequence{<:NucleicAcidAlphabet})
+    return Assembly(
+        convert(String, name),
+        convert(LongDNASeq, seq),
+        none(Segment),
+        none(BitVector)
+    )
 end
 
 function Assembly(record::FASTA.Record, segment::Union{Segment, Nothing}, check_significance::Bool=true)
@@ -154,16 +301,14 @@ function Assembly(record::FASTA.Record, segment::Union{Segment, Nothing}, check_
     end
     seq = FASTA.sequence(LongDNASeq, record)
     sgmt = segment === nothing ? none(Segment) : some(segment)
-    return Assembly(name, sgmt, insignificant, seq)
+    return Assembly(name, seq, sgmt, insignificant)
 end
 
 # TODO: Should the errors be part of the struct, or stored outside the struct?
 # they are not intrinsic to the information in it, but derived from it.
 """
-    AssemblyProtein
-
 A struct to store the information about a protein in an assembly, which has
-been compared to its reference.
+been compared to its reference. See the fields of the struct for its information.
 """
 struct AssemblyProtein
     variant::Protein
@@ -359,6 +504,10 @@ end
     AlignedAssembly
 
 Struct to store information about a DNA sequence aligned to its reference.
+Creating this object automatically aligns the assembly to the reference and validates
+it, adding any errors to its `errors` field.
+
+See the fields of the struct for the information contained.
 """
 struct AlignedAssembly
     assembly::Assembly
