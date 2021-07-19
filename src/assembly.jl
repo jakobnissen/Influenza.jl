@@ -138,19 +138,23 @@ end
 
 struct Assembly
     name::String
-    segment::Segment
+    # none means unknown
+    segment::Option{Segment}
     # none means no bases are insignificant, or unknown
     insignificant::Option{BitVector}
     seq::LongDNASeq
 end
 
-function Assembly(record::FASTA.Record, segment::Segment, check_significance::Bool=true)
+function Assembly(record::FASTA.Record, segment::Union{Segment, Nothing}, check_significance::Bool=true)
     itr = (i in UInt8('a'):UInt8('z') for i in @view record.data[record.sequence])
     insignificant = check_significance && any(itr) ? some(BitVector(itr)) : none(BitVector)
-    name = FASTA.identifier(record)
-    name === nothing && throw(ArgumentError("No identifier in FASTA record"))
+    name = let
+        header = FASTA.header(rec)
+        header === nothing ? "" : header
+    end
     seq = FASTA.sequence(LongDNASeq, record)
-    return Assembly(name, segment, insignificant, seq)
+    sgmt = segment === nothing ? none(Segment) : some(segment)
+    return Assembly(name, sgmt, insignificant, seq)
 end
 
 # TODO: Should the errors be part of the struct, or stored outside the struct?
@@ -366,7 +370,9 @@ struct AlignedAssembly
 end
 
 function AlignedAssembly(asm::Assembly, ref::Reference)
-    @assert ref.segment == asm.segment
+    if unwrap_or(asm.segment, ref.segment) !== ref.segment
+        error("Cannot make AlignedAssembly of different segments")
+    end
 
     # For optimization: The large majority of time is spent on this alignment
     aln = pairalign(OverlapAlignment(), asm.seq, ref.seq, DEFAULT_DNA_ALN_MODEL).aln

@@ -12,6 +12,9 @@ using BioSequences
 using BioAlignments
 using Serialization
 
+imap(f) = x -> Iterators.map(f, x)
+ifilter(f) = x -> Iterators.filter(f, x)
+
 const INFLUENZA_VERSION = let
     project = joinpath(dirname(dirname(pathof(Influenza))), "Project.toml")
     toml = read(project, String)
@@ -25,6 +28,7 @@ struct Maybe end
 include("assembly.jl")
 include("alignment.jl")
 include("serialization.jl")
+include("blast.jl")
 
 export is_stop,
     alignment_identity,
@@ -33,6 +37,7 @@ export is_stop,
     DEFAULT_AA_ALN_MODEL,
     store_references,
     load_references,
+    annotate,
 
     # Exports from InfluenzaCore
     Segment, Segments, SeroType, Proteins, Protein, source

@@ -1,37 +1,34 @@
 # This file contains to code write References to .jls files and .fna files.
-
 """
-    store_references(dir::AbstractString, ref_itr, fasta::Bool=false)
+    store_references(basename::AbstractString, ref_itr, fasta::Bool=false)
 
-For each segment in the iterator of `Segment`, `ref_itr`, serialize first the
-current Influenza version as `VersionNumber`then a `Vector{Reference}`.
-If `fasta`, also write a FASTA file to `\$segment.fna`
+Serialize to file `basename * ".jls"` first the current Influenza version as
+`VersionNumber`, then a `Vector{Reference}`. If `fasta`, also write a FASTA file
+to `basename * ".fna"`.
 """
 function store_references(
-    dir::AbstractString,
+    basename::AbstractString,
     reference_itr,
     fasta::Bool=false,
 )
-    isdir(dir) || error("No such directory: \"$dir\"")
-
-    # Collect by segment
-    bysegment = Dict{Segment, Vector{Reference}}()
-    for ref::Reference in reference_itr
-        push!(get!(Vector{Reference}, bysegment, ref.segment), ref)
+    # Check existence of parent directory
+    parent_dir = dirname(basename)
+    if !isempty(parent_dir) && !isdir(parent_dir)
+        error("Parent directory not found: \"$parent_dir\"")
     end
 
-    # Serialize each segment
-    for (segment, refs) in bysegment
-        open(joinpath(dir, "$segment.jls")) do io
-            serialize(io, VERSION)
-            serialize(io, refs)
-        end
+    # Serialize references
+    ref_vec::Vector{Influenza.Reference} = collect(reference_itr)
+    open(basename * ".jls", "w") do io
+        serialize(io, INFLUENZA_VERSION)
+        serialize(io, ref_vec)
+    end
 
-        if fasta
-            open(FASTA.Writer, joinpath(dir, "$segment.fna")) do writer
-                for ref in refs
-                    write(writer, ref.seq)
-                end
+    # Serialize as FASTA format
+    if fasta
+        open(FASTA.Writer, basename * ".fna") do writer
+            for ref in ref_vec
+                write(writer, FASTA.Record(ref.name, ref.seq))
             end
         end
     end
@@ -57,7 +54,7 @@ function load_references(file::AbstractString)
                 "cannot load with current Influenza version $INFLUENZA_VERSION."
             )
         end
-        deserialize(io)
+        deserialize(io)::Vector{Reference}
     end
 end
 
