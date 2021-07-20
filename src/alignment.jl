@@ -13,13 +13,6 @@ Affine Gap Score model with parameters empirically chosen to strike a sensible b
 const DEFAULT_AA_ALN_MODEL = AffineGapScoreModel(BLOSUM62, gap_open=-10, gap_extend=-2)
 
 """
-    is_stop(x::DNACodon)
-
-Return whether the DNA Codon (a 3-mer) is TAA, TAG or TGA.
-"""
-is_stop(x::DNACodon) = (x === mer"TAA") | (x === mer"TAG") | (x === mer"TGA")
-
-"""
     alignment_identity(::PairwiseAlignment)
 
 Calculate the alignment identity between two sequences. Alignment is calculated as n_matches divided by the ungapped length of the shortest seq. Places where both sequences are gapped do not count as matches.
