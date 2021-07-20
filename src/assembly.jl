@@ -40,6 +40,15 @@ function Base.print(io::IO, x::ErrorLowIdentity)
     print(io, "Identity to reference low at ", percent, " %")
 end
 
+"The segment is too short"
+struct ErrorTooShort <: SegmentError
+    len::UInt32
+end
+
+function Base.print(io::IO, x::ErrorTooShort)
+    print(io, "Sequence too short at ", x,len, " bases")
+end
+
 "Too many bases are insignificantly called in the sequence"
 struct ErrorInsignificant <: SegmentError
     n_insignificant::UInt32
@@ -58,14 +67,13 @@ function Base.print(io::IO, x::ErrorAmbiguous)
     print(io, "Sequence has ", x.n_ambiguous, " ambiguous bases")
 end
 
-"Mean depth across sequence is too low"
-struct ErrorLowDepth <: SegmentError
-    depth::Float32
+"Some particular bases have too low depth"
+struct ErrorLowDepthBases <: SegmentError
+    n::UInt32
 end
 
-function Base.print(io::IO, x::ErrorLowDepth)
-    n = Printf.@sprintf("%.4e", x.depth)
-    print(io, "Depth is low at ", n)
+function Base.print(io::IO, x::ErrorLowDepthBases)
+    print(io, "Sequence has ", x.n, " low-depth bases")
 end
 
 "Fraction of reference covered by reads/query is too low"
@@ -296,7 +304,7 @@ function Assembly(record::FASTA.Record, segment::Union{Segment, Nothing}, check_
     itr = (i in UInt8('a'):UInt8('z') for i in @view record.data[record.sequence])
     insignificant = check_significance && any(itr) ? some(BitVector(itr)) : none(BitVector)
     name = let
-        header = FASTA.header(rec)
+        header = FASTA.header(record)
         header === nothing ? "" : header
     end
     seq = FASTA.sequence(LongDNASeq, record)
@@ -338,6 +346,11 @@ function AssemblyProtein(
     return AssemblyProtein(protein.var, orfs, identity, errors)
 end
 
+"""
+    is_stop(x::DNACodon)
+
+Return whether the DNA Codon (a 3-mer) is TAA, TAG or TGA.
+"""
 is_stop(x::DNACodon) = (x === mer"TAA") | (x === mer"TAG") | (x === mer"TGA")
 
 "Adds one nt at the end of the codon, moving it. If nt is ambiguous, return `nothing`"
@@ -534,9 +547,6 @@ function AlignedAssembly(asm::Assembly, ref::Reference)
     end
 
     errors = Union{ErrorLowIdentity, SegmentError}[]
-    
-    # Low identity to reference
-    identity < 0.9 && push!(errors, ErrorLowIdentity(identity))
 
     # Insignificant bases
     n_insignificant = unwrap_or(and_then(count, Int, asm.insignificant), 0)
@@ -549,3 +559,21 @@ function AlignedAssembly(asm::Assembly, ref::Reference)
     return AlignedAssembly(asm, ref, aln, identity, proteins, errors)
 end
 
+"""
+    translate_proteins(::AlignedAssembly)
+
+Get a vector of `LongAminoAcidSeq`, one from each protein of the aligned
+assembly. Does not do any validation.
+"""
+function translate_proteins(alnasm::AlignedAssembly)
+    dnaseq = LongDNASeq()
+    result = LongAminoAcidSeq[]
+    for protein in alnasm.proteins
+        empty!(dnaseq)
+        for orf in protein.orfs
+            append!(dnaseq, alnasm.assembly.seq[orf])
+        end
+        push!(result, translate(dnaseq))
+    end
+    return result
+end

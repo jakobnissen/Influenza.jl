@@ -37,6 +37,7 @@ export Assembly,
     Reference,
     AlignedAssembly,
 
+    translate_proteins,
     alignment_identity,
     ha0_cleavage,
     store_references,
