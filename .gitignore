@@ -1,1 +1,7 @@
-Manifest.toml
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+build
+site
+/Manifest.toml
+*.code-workspace
