@@ -82,7 +82,7 @@ struct ErrorLowCoverage <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorLowCoverage)
-    n = @sprintf("%.4e", x.coverage)
+    n = @sprintf("%.3e", x.coverage)
     print(io, "Coverage is low at ", n)
 end
 
@@ -142,15 +142,6 @@ function Base.print(io::IO, x::ErrorFrameShift)
     print(io, "Frameshift: ", indel_message(x.indel))
 end
 
-"Too many indels in sequence - alignment probably went wrong"
-struct ErrorTooManyIndels <: ProteinError
-    indels::Vector{Indel}
-end
-
-function Base.print(io::IO, x::ErrorTooManyIndels)
-    print(io, "Too many indels, found ", length(x.indels), " indels")
-end
-
 "An indel is too big to be biologically plausible, or needs special attention"
 struct ErrorIndelTooBig <: ProteinError
     indel::Indel
@@ -166,7 +157,7 @@ struct ErrorFivePrimeDeletion <: ProteinError
 end
 
 function Base.print(io::IO, x::ErrorFivePrimeDeletion)
-    print(io, "Deletion of ", length(x.x), " bases at 5' end")
+    print(io, "Deletion of ", length(x.indel), " bases at 5' end")
 end
 
 "Frameshift or substitution added a stop codon too early compared to reference"
@@ -312,16 +303,14 @@ function Assembly(record::FASTA.Record, segment::Union{Segment, Nothing}, check_
     return Assembly(name, seq, sgmt, insignificant)
 end
 
-# TODO: Should the errors be part of the struct, or stored outside the struct?
-# they are not intrinsic to the information in it, but derived from it.
 """
 A struct to store the information about a protein in an assembly, which has
 been compared to its reference. See the fields of the struct for its information.
 """
 struct AssemblyProtein
     variant::Protein
-    orfs::Vector{UnitRange{UInt32}}
-    identity::Float64
+    orfs::Option{Vector{UnitRange{UInt32}}}
+    identity::Option{Float64}
     errors::Vector{ProteinError}
 end
 
@@ -342,7 +331,14 @@ function AssemblyProtein(
     refaa = BioSequences.translate(LongDNASeq(collect(ref_aas)[1:end-3]))
     aaaln = pairalign(GlobalAlignment(), aaseq, refaa, DEFAULT_AA_ALN_MODEL).aln
     @assert aaaln !== nothing
-    identity = alignment_identity(aaaln)::Float64
+
+    # The orfseq can be empty if the alignment has sufficiently low identity.
+    # in this case, we will store orfs and identity as none.
+    (identity, orfs) = if isempty(orfseq)
+        none(Float64), none(Vector{UnitRange{UInt32}})
+    else
+        some(alignment_identity(aaaln)::Float64), some(orfs)
+    end
     return AssemblyProtein(protein.var, orfs, identity, errors)
 end
 
@@ -451,7 +447,7 @@ function compare_proteins_in_alignment(
             n_insertions += 1
         elseif !iszero(n_insertions)
             indel = Indel(
-                UInt32(seg_pos - n_deletions):UInt32(seg_pos - 1),
+                UInt32(seg_pos - n_insertions):UInt32(seg_pos - 1),
                 ref_pos - 1,
                 false
             )
@@ -502,11 +498,6 @@ function compare_proteins_in_alignment(
         push!(errors, ErrorNoStop())
     else
         dnaseq = dnaseq[1:end-3]
-    end
-
-    # If there are too many indel messages, that's presumably a problem
-    if length(indels) > 3
-        push!(errors, ErrorTooManyIndels(indels))
     end
 
     return dnaseq, orfs, errors, indels
@@ -562,18 +553,24 @@ end
 """
     translate_proteins(::AlignedAssembly)
 
-Get a vector of `LongAminoAcidSeq`, one from each protein of the aligned
-assembly. Does not do any validation.
+Get a vector of `Option{LongAminoAcidSeq}`, one from each protein of the aligned
+assembly. If the length of the ORF is not divisible by 3, truncates bases from the 3' end.
+Does not do any validation of the AA sequences.
 """
 function translate_proteins(alnasm::AlignedAssembly)
     dnaseq = LongDNASeq()
-    result = LongAminoAcidSeq[]
+    result = Option{LongAminoAcidSeq}[]
     for protein in alnasm.proteins
-        empty!(dnaseq)
-        for orf in protein.orfs
-            append!(dnaseq, alnasm.assembly.seq[orf])
+        if is_error(protein.orfs)
+            push!(result, none(LongAminoAcidSeq))
+        else
+            empty!(dnaseq)
+            for orf in unwrap(protein.orfs)
+                append!(dnaseq, alnasm.assembly.seq[orf])
+            end
+            resize!(dnaseq, length(dnaseq) - length(dnaseq) % 3)
+            push!(result, some(translate(dnaseq)))
         end
-        push!(result, translate(dnaseq))
     end
     return result
 end
