@@ -46,7 +46,7 @@ struct ErrorTooShort <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorTooShort)
-    print(io, "Sequence too short at ", x,len, " bases")
+    print(io, "Sequence too short at ", x,len, (isone(x.len) ? " base" : " bases"))
 end
 
 "Too many bases are insignificantly called in the sequence"
@@ -55,7 +55,10 @@ struct ErrorInsignificant <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorInsignificant)
-    print(io, "Sequence has ", x.n_insignificant, " insignificant bases")
+    print(io,
+        "Sequence has ", x.n_insignificant, " insignificant ",
+        (isone(x.n_insignificant) ? "base" : "bases")
+    )
 end
 
 "Too many bases or amino acids are ambiguous"
@@ -64,7 +67,10 @@ struct ErrorAmbiguous <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorAmbiguous)
-    print(io, "Sequence has ", x.n_ambiguous, " ambiguous bases")
+    print(io,
+        "Sequence has ", x.n_ambiguous, " ambiguous ",
+        (isone(x.n_ambiguous) ? "base" : "bases")
+    )
 end
 
 "Some particular bases have too low depth"
@@ -73,7 +79,7 @@ struct ErrorLowDepthBases <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorLowDepthBases)
-    print(io, "Sequence has ", x.n, " low-depth bases")
+    print(io, "Sequence has ", x.n, " low-depth ", (isone(x.n) ? "base" : "bases"))
 end
 
 "Fraction of reference covered by reads/query is too low"
@@ -82,7 +88,7 @@ struct ErrorLowCoverage <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorLowCoverage)
-    n = @sprintf("%.3e", x.coverage)
+    n = @sprintf("%.3f", x.coverage)
     print(io, "Coverage is low at ", n)
 end
 
@@ -115,11 +121,11 @@ function Base.print(io::IO, x::ErrorLinkerContamination)
     s = "Linker/primer contamination at ends, check "
     both = (x.fiveprime !== nothing) & (x.threeprime !== nothing)
     if x.fiveprime !== nothing
-        s *= "first " * string(x.fiveprime) * " bases"
+        s *= "first " * string(x.fiveprime) * (isone(x.fiveprime) ? " base" : " bases")
     end
     if x.threeprime !== nothing
         both && (s *= " and ")
-        s *= "last " * string(x.threeprime) * " bases"
+        s *= "last " * string(x.threeprime) * (isone(x.threeprime) ? " base" : " bases")
     end
     print(io, s)
 end
@@ -157,7 +163,11 @@ struct ErrorFivePrimeDeletion <: ProteinError
 end
 
 function Base.print(io::IO, x::ErrorFivePrimeDeletion)
-    print(io, "Deletion of ", length(x.indel), " bases at 5' end")
+    print(io,
+        "Deletion of ", length(x.indel),
+        (isone(length(x.indel)) ? " base" : " bases"),
+        " at 5' end"
+    )
 end
 
 "Frameshift or substitution added a stop codon too early compared to reference"

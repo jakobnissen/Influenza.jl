@@ -7,7 +7,8 @@ tovec(x) = x isa Vector ? x : vec(collect(x))
 Annotate `itr`, a vector of `FASTA.Record` or iterator of `Assembly`, yielding
 a vector of `Option{AlignedAssembly}`, with error values where no reference could
 be matched. `jls_path` and `fna_path` must be paths to serialization and FASTA
-file produced by `Influenza.store_references.`
+file produced by `Influenza.store_references.` It is recommended that then references
+broadly represent various clades, so a relatively close hit can be found.
 
 # Extended help
 This function works by using running `blastn` in a temporary directory and
