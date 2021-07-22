@@ -258,26 +258,20 @@ function compare_proteins_in_alignment(
         end
     end
 
+    # If we ended due to a stop, remove the stop codon
+    if is_stop(codon)
+        resize!(nucleotides, length(nucleotides) - 3)
+        seg_pos -= 3
+    else
+        push!(errors, ErrorNoStop())
+    end
+
     # Add final orf after loop
     if seg_orfstart !== nothing
         push!(orfs, UInt16(seg_orfstart):UInt16(seg_pos))
     end
 
     dnaseq = LongDNASeq(nucleotides)
-    # Is seq length divisible by three?
-    remnant = length(dnaseq) % 3
-    if !iszero(remnant)
-        push!(errors, ErrorCDSNotDivisible(length(dnaseq)))
-    end
-
-    # Does it end with a stop? If so, remove it, else report error
-    dnaseq = iszero(remnant) ? dnaseq : dnaseq[1:end-remnant]
-    if isempty(dnaseq) || !is_stop(DNACodon(dnaseq[end-2:end]))
-        push!(errors, ErrorNoStop())
-    else
-        dnaseq = dnaseq[1:end-3]
-    end
-
     return dnaseq, orfs, errors, indels
 end
 
