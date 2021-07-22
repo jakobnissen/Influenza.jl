@@ -101,6 +101,28 @@ function Base.print(io::IO, x::ErrorAssemblyNotConverged)
     print(io, "Assembly not converged, at ", percent, " % identity")
 end
 
+"Influenza has conserved termini at 5' and 3' ends. One or both are missing"
+struct ErrorNoTermini
+    missfive::Bool
+    missthree::Bool
+
+    function ErrorNoTermini(missfive::Bool, missthree::Bool)
+        if !(missing_5 | missing_3)
+            throw(ArgumentError("ErrorNoTermini must miss at least one end"))
+        end
+        new(missfive, missthree)
+    end
+end
+
+function Base.print(io::IO, x::ErrorNoTermini)
+    fst = x.missfive ? "5'" : "3'"
+    print(io,
+        "Missing conserved termini at ", fst,
+        (x.missfive & x.missthree) ? " and 3' " : "",
+        " end"
+    )
+end
+
 "Sequence is flanked by invalid sequences - probably linkers or primers"
 struct ErrorLinkerContamination <: SegmentError
     fiveprime:: Union{Nothing, UInt32}
