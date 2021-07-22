@@ -27,8 +27,9 @@ end
 "Singleton struct used for three-valued logic, in e.g. `Union{Bool, Maybe}`"
 struct Maybe end
 
-include("assembly.jl")
+include("errors.jl")
 include("alignment.jl")
+include("assembly.jl")
 include("serialization.jl")
 include("blast.jl")
 
