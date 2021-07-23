@@ -25,8 +25,34 @@ function indel_message(x::Indel)
     end
 end
 
+"""
+    InfluenzaError
+
+Abstract type for types that represent an error in an influenza sequence,
+as determined by some annotation or quality control process. Concrete subtypes
+represent different kinds of errors.
+
+# See also: [`SegmentError`](@ref), [`ProteinError`](@ref)
+"""
 abstract type InfluenzaError end
+
+"""
+    SegmentError
+
+Abstract subtype of `InfluenzaError`, representing errors at the segment DNA level.
+
+# See also: [`InfluenzaError`](@ref)
+"""
 abstract type SegmentError <: InfluenzaError end
+
+"""
+    SegmentError
+
+Abstract subtype of `InfluenzaError`, representing errors at the protein and/or
+CDSs DNA level.
+
+See also: [`InfluenzaError`](@ref)
+"""
 abstract type ProteinError <: InfluenzaError end
 
 "Protein or DNA sequence has too low identity compared to the reference"
@@ -102,7 +128,7 @@ function Base.print(io::IO, x::ErrorAssemblyNotConverged)
 end
 
 "Influenza has conserved termini at 5' and 3' ends. One or both are missing"
-struct ErrorNoTermini
+struct ErrorNoTermini <: SegmentError
     missfive::Bool
     missthree::Bool
 
@@ -118,7 +144,7 @@ function Base.print(io::IO, x::ErrorNoTermini)
     fst = x.missfive ? "5'" : "3'"
     print(io,
         "Missing conserved termini at ", fst,
-        (x.missfive & x.missthree) ? " and 3' " : "",
+        (x.missfive & x.missthree) ? " and 3'" : "",
         " end"
     )
 end

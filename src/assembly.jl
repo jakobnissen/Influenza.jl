@@ -277,11 +277,15 @@ end
 
 
 """
-    AlignedAssembly
+    AlignedAssembly(::Assembly, ::Reference, force_termini=false)
 
 Struct to store information about a DNA sequence aligned to its reference.
 Creating this object automatically aligns the assembly to the reference and validates
 it, adding any errors to its `errors` field.
+
+If `force_termini` is set to true, then the conserved 5' and 3' motifs must be
+present in the references, or it throws an error. Setting this enables any errors
+related to these termini in the `Assembly` to be in the `errors` fields.
 
 See the fields of the struct for the information contained.
 """
@@ -294,7 +298,7 @@ struct AlignedAssembly
     errors::Vector{Union{ErrorLowIdentity, SegmentError}}
 end
 
-function AlignedAssembly(asm::Assembly, ref::Reference)
+function AlignedAssembly(asm::Assembly, ref::Reference, force_termini::Bool=false)
     if unwrap_or(asm.segment, ref.segment) !== ref.segment
         error("Cannot make AlignedAssembly of different segments")
     end
@@ -318,6 +322,11 @@ function AlignedAssembly(asm::Assembly, ref::Reference)
     # Ambiguous bases
     n_amb = count(isambiguous, asm.seq)
     iszero(n_amb) || push!(errors, ErrorAmbiguous(n_amb))
+
+    # Termini
+    (m_notermini, m_linker) = check_termini(aln, force_termini, 2)
+    m_notermini !== nothing && push!(errors, m_notermini)
+    m_linker !== nothing && push!(errors, m_linker)
 
     return AlignedAssembly(asm, ref, aln, identity, proteins, errors)
 end
@@ -365,8 +374,14 @@ function check_termini(
     max_subs::Integer=2
 )::Tuple{Union{Nothing, ErrorNoTermini}, Union{Nothing, ErrorLinkerContamination}}
     ref = aln.b
-    rng_fw = approxsearch(ref, TERMINAL_5, max_subs, 1, lastindex(TERMINAL_5))
-    rng_rv = approxrsearch(ref, TERMINAL_3, max_subs, lastindex(ref), lastindex(ref)-lastindex(TERMINAL_3)+1)
+    rng_fw = approxsearch(
+        ref, TERMINAL_INFLUENZA_5, max_subs, 1,
+        lastindex(TERMINAL_INFLUENZA_5)+max_subs
+    )
+    rng_rv = approxrsearch(
+        ref, TERMINAL_INFLUENZA_3, max_subs, lastindex(ref),
+        lastindex(ref)-lastindex(TERMINAL_INFLUENZA_3)+1-max_subs
+    )
     if (isempty(rng_fw) | isempty(rng_rv))
         if force
             throw(ArgumentError("Terminal not found in reference"))

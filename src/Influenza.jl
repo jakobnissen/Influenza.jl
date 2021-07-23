@@ -17,10 +17,11 @@ using Printf
 imap(f) = x -> Iterators.map(f, x)
 ifilter(f) = x -> Iterators.filter(f, x)
 
-# Full-length influenza A and B (but not C or D) have these termini. Sometimes there
-# are a few substitutions.
-const TERMINAL_5 = mer"AGCAAAAGCAGG"dna
-const TERMINAL_3 = mer"CTTGTTTCTCCT"dna
+"Conserved sequence at influenza segment 5' end"
+const TERMINAL_INFLUENZA_5 = mer"AGCAAAAGCAGG"dna
+
+"Conserved sequence at influenza segment 3' end"
+const TERMINAL_INFLUENZA_3 = mer"CTTGTTTCTCCT"dna
 
 const INFLUENZA_VERSION = let
     p = pathof(Influenza)::String
@@ -39,7 +40,10 @@ include("assembly.jl")
 include("serialization.jl")
 include("blast.jl")
 
-export Assembly,
+export TERMINAL_INFLUENZA_5,
+    TERMINAL_INFLUENZA_3,
+
+    Assembly,
     AssemblyProtein,
     Reference,
     AlignedAssembly,
