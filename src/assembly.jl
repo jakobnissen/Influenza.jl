@@ -346,3 +346,58 @@ function translate_proteins(alnasm::AlignedAssembly)
     end
     return result
 end
+
+"""
+    check_termini(aln, force=true, max_subs=1) -> (ismissing, haslinker)
+
+Check the alignment between a query and reference sequence starts and ends at the
+correct positions. `ismissing` isa `Union{Nothing, ErrorNoTermini}`, and `haslinker`
+isa `Union{Nothing, ErrorLinkerContamination}`.
+
+The reference sequence must have the expected termini - this is checked by searching
+for the known termini at the ends of the reference. Up to `max_subs` is allowed in this
+check. If the termini are not found in the reference, `force` causes it to throw an error.
+If `force` is `false`, return  `(nothing, nothing)`.
+"""
+function check_termini(
+    aln::PairwiseAlignment{<:NucleotideSeq, <:NucleotideSeq},
+    force::Bool=true,
+    max_subs::Integer=2
+)::Tuple{Union{Nothing, ErrorNoTermini}, Union{Nothing, ErrorLinkerContamination}}
+    ref = aln.b
+    rng_fw = approxsearch(ref, TERMINAL_5, max_subs, 1, lastindex(TERMINAL_5))
+    rng_rv = approxrsearch(ref, TERMINAL_3, max_subs, lastindex(ref), lastindex(ref)-lastindex(TERMINAL_3)+1)
+    if (isempty(rng_fw) | isempty(rng_rv))
+        if force
+            throw(ArgumentError("Terminal not found in reference"))
+        else
+            return (nothing, nothing)
+        end
+    end
+    anchors = aln.a.aln.anchors
+    isempty(anchors) && return (nothing, nothing)
+    errors = Union{ErrorNoTermini, ErrorLinkerContamination}[]
+    missfive, missthree = false, false
+    contfive, contthree = nothing, nothing
+    if anchors[2].op === BioAlignments.OP_DELETE
+        missfive = true
+    elseif anchors[2].op === BioAlignments.OP_INSERT
+        contfive = UInt32(anchors[2].seqpos)
+    end
+    if anchors[end].op === BioAlignments.OP_DELETE
+        missthree = true
+    elseif anchors[end].op === BioAlignments.OP_INSERT
+        conthree = UInt32(anchors[end].seqpos - anchors[end-1].seqpos)
+    end
+    fst = !(missfive | missthree) ? nothing : ErrorNoTermini(missfive, missthree)
+    scn = if (contfive === nothing) & (contthree === nothing)
+        nothing
+    else
+        ErrorLinkerContamination(contfive, contthree)
+    end
+    return (fst, scn)
+end
+
+
+
+        

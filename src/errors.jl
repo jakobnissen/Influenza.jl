@@ -107,7 +107,7 @@ struct ErrorNoTermini
     missthree::Bool
 
     function ErrorNoTermini(missfive::Bool, missthree::Bool)
-        if !(missing_5 | missing_3)
+        if !(missfive | missthree)
             throw(ArgumentError("ErrorNoTermini must miss at least one end"))
         end
         new(missfive, missthree)
@@ -131,9 +131,16 @@ struct ErrorLinkerContamination <: SegmentError
     function ErrorLinkerContamination(fiveprime, threeprime)
         fp = convert(Union{Nothing, UInt32}, fiveprime)
         tp = convert(Union{Nothing, UInt32}, threeprime)
+        function check_zero_contamination(x)
+            if x !== nothing && iszero(x)
+                throw(ArgumentError("Cannot have zero-length contamination"))
+            end
+        end
         if fp === tp === nothing
             throw(ArgumentError("Both fields cannot be `nothing`"))
         end
+        check_zero_contamination(fp)
+        check_zero_contamination(tp)
         new(fp, tp)
     end
 end
