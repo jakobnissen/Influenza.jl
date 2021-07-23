@@ -84,7 +84,7 @@ function annotate(
     assemblies = map(recs) do rec
         Assembly(rec, nothing)
     end
-    validate(assemblies, serialize_dir)
+    annotate(assemblies, jls_path, fna_path)
 end
 
 function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
@@ -115,7 +115,7 @@ function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
     result = Dict{Int, Option{String}}()
     for (query, hits) in byquery
         for hit in hits
-            if hit.len / hit.qlen ≥ lenratio && hit.ident ≥ 0.9
+            if hit.len / hit.qlen ≥ lenratio && hit.ident ≥ 0.8
                 result[hit.query] = some(hit.subject)
                 break
             end
