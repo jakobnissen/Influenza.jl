@@ -334,6 +334,26 @@ function AlignedAssembly(asm::Assembly, ref::Reference, force_termini::Bool=fals
 end
 
 """
+    translate_reference(::AlignedAssembly)
+
+Create a new `Reference` object from the assembly in `AlignedAssembly`. This function
+does NOT perform any checks that the aligned assembly is suitable to make into a
+reference, but may fail if the aligned assembly is so bad a sensible reference cannot
+be constructed.
+"""
+function translate_reference(x::AlignedAssembly)
+    proteins = map(x.proteins) do protein
+        ReferenceProtein(protein.var, unwrap(protein.orfs))
+    end
+    return Reference(
+        x.assembly.name,
+        x.reference.segment,
+        x.assembly.seq,
+        proteins
+    )
+end
+
+"""
     translate_proteins(::AlignedAssembly)
 
 Get a vector of `Option{LongAminoAcidSeq}`, one from each protein of the aligned
