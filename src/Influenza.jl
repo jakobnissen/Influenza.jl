@@ -5,10 +5,10 @@ It is distinct from `InfluenzaCore` in that it is a more heavyweight dependency,
 """
 module Influenza
 
-using Core: Argument
 using ErrorTypes
 using FASTX
 using InfluenzaCore
+using StructTypes # for JSON (de)serialization
 using BioSequences
 using BioAlignments
 using Serialization
@@ -39,6 +39,10 @@ include("alignment.jl")
 include("assembly.jl")
 include("serialization.jl")
 include("blast.jl")
+
+# This is type piracy, but hopefully it's OK!
+StructTypes.StructType(::Type{<:BioSequence}) = StructTypes.StringType()
+StructTypes.StructType(::Type{<:AbstractUnitRange}) = StructTypes.Struct()
 
 export TERMINAL_INFLUENZA_5,
     TERMINAL_INFLUENZA_3,

@@ -7,6 +7,7 @@ struct ReferenceProtein
     var::Protein
     orfs::Vector{UnitRange{UInt32}}
 end
+StructTypes.StructType(::Type{ReferenceProtein}) = StructTypes.Struct()
 
 # This constructor validates orfs - may not be necessary
 function ReferenceProtein(
@@ -35,6 +36,7 @@ struct Reference
     seq::LongDNASeq
     proteins::Vector{ReferenceProtein}
 end
+StructTypes.StructType(::Type{Reference}) = StructTypes.Struct()
 
 """
 A DNA sequence representing an influenza segment.
