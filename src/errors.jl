@@ -256,7 +256,7 @@ function Base.print(io::IO, x::ErrorLateStop)
         io,
         "Protein stops late at segment pos ", x.observed_pos,
         " after ", x.observed_naa, " aa, reference stops at ",
-        x.expected_stop, " after ", x.expected_naa, " aa"
+        x.expected_pos, " after ", x.expected_naa, " aa"
     )
 end
 

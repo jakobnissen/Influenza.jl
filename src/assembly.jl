@@ -160,6 +160,7 @@ function compare_proteins_in_alignment(
         seg_pos += (seg_nt !== DNA_Gap)
         ref_pos += (ref_nt !== DNA_Gap)
         is_coding = !iszero(ref_pos) && coding_mask[ref_pos]
+        is_intron = !is_coding && ref_pos < last_coding_ref_pos
 
         # Check for 5' truncation
         if iszero(seg_pos)
@@ -176,25 +177,28 @@ function compare_proteins_in_alignment(
             fiveprime_truncated = 0
         end
 
-        # Add ORF if is coding and update seg_orfstart if applicable
-        if is_coding
-            if (seg_orfstart === nothing) & (seg_nt !== DNA_Gap)
-                seg_orfstart = seg_pos
-            end
-        else
+        # Add ORF if not in intron and update seg_orfstart if applicable
+        if is_intron
             if seg_orfstart !== nothing
                 push!(orfs, UInt32(seg_orfstart):UInt32(seg_pos - 1))
                 seg_orfstart = nothing
             end
+        else
+            if (seg_orfstart === nothing) & (seg_nt !== DNA_Gap)
+                seg_orfstart = seg_pos
+            end
         end
 
-        if ref_pos == last_coding_ref_pos
+        # We expect to stop 3 bases after last coding position (at a STOP codon)
+        if ref_pos == last_coding_ref_pos + 3
             maybe_expected_stop = some(Int(seg_pos))
         end
 
         # All the rest of the operations only make sense if
-        # the sequence is coding
-        is_coding || continue
+        # the sequence is coding. We skip the introns since they are spliced
+        # out of the mRNA, but any pos after last intron must be terminated
+        # by encountering a stop codon
+        is_intron && continue
 
         # Check for deletions and update the codon
         if seg_nt == DNA_Gap
@@ -325,9 +329,12 @@ function AlignedAssembly(asm::Assembly, ref::Reference, force_termini::Bool=fals
     n_amb = count(isambiguous, asm.seq)
     iszero(n_amb) || push!(errors, ErrorAmbiguous(n_amb))
 
-    # Termini
+    # Termini. If we force termini to be present in ref, we add an error if it's
+    # not present in the assembly.
     (m_notermini, m_linker) = check_termini(aln, force_termini, 2)
-    m_notermini !== nothing && push!(errors, m_notermini)
+    if force_termini && m_notermini !== nothing
+        push!(errors, m_notermini)
+    end
     m_linker !== nothing && push!(errors, m_linker)
 
     return AlignedAssembly(asm, ref, aln, identity, proteins, errors)
