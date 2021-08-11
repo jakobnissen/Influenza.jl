@@ -113,7 +113,7 @@ function source(x::Protein)
 end
 
 """
-SeroType
+    SeroType
 
 Influenza A are separated into serotypes, based on their HA and NA proteins.
 The H and Ns are indicated by a natural number (1, 2, 3...), or may optionally
