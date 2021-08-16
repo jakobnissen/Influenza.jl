@@ -155,7 +155,6 @@ function compare_proteins_in_alignment(
     orfs = UnitRange{UInt32}[]
     seg_orfstart = nothing
 
-
     for (seg_nt, ref_nt) in aln
         seg_pos += (seg_nt !== DNA_Gap)
         ref_pos += (ref_nt !== DNA_Gap)
@@ -265,16 +264,22 @@ function compare_proteins_in_alignment(
     end
 
     # If we ended due to a stop, remove the stop codon
-    if is_stop(codon)
+    if is_stop(codon) && iszero(length(nucleotides) % 3)
         resize!(nucleotides, length(nucleotides) - 3)
         seg_pos -= 3
     else
         push!(errors, ErrorNoStop())
     end
 
-    # Add final orf after loop
+    # Add final orf after loop. We make sure to truncate the ORF sequence to
+    # a multiple of 3 if it is not already
     if seg_orfstart !== nothing
-        push!(orfs, UInt16(seg_orfstart):UInt16(seg_pos))
+        lastorf = UInt16(seg_orfstart):UInt16(seg_pos)
+        remainder = (sum(length, orfs, init=0) + length(lastorf)) % 3
+        resize!(nucleotides, length(nucleotides) - remainder)
+        if length(lastorf) != remainder
+            push!(orfs, first(lastorf):(last(lastorf)-remainder))
+        end
     end
 
     dnaseq = LongDNASeq(nucleotides)
