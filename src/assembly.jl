@@ -318,7 +318,7 @@ function AlignedAssembly(asm::Assembly, ref::Reference, force_termini::Bool=fals
     aln = pairalign(OverlapAlignment(), asm.seq, ref.seq, DEFAULT_DNA_ALN_MODEL).aln
     @assert aln !== nothing
 
-    identity = alignment_identity(aln)::Float64
+    identity = alignment_identity(OverlapAlignment(), aln)::Float64
 
     proteins = map(ref.proteins) do protein
         AssemblyProtein(protein, aln, ref)
