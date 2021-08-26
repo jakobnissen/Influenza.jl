@@ -28,7 +28,8 @@ function store_references(
     if fasta
         open(FASTA.Writer, basename * ".fna") do writer
             for ref in ref_vec
-                write(writer, FASTA.Record(ref.name, ref.seq))
+                header = ref.name * '_' * string(ref.segment)
+                write(writer, FASTA.Record(header, ref.seq))
             end
         end
     end
@@ -36,6 +37,19 @@ end
 
 function is_breaking(a::VersionNumber, b::VersionNumber)
     return a.major != b.major || (iszero(a.major) && (a.minor != b.minor))
+end
+
+"Strip <SEP><SEGMENT> off the end of a string. Errors if not present."
+function strip_trailing_segment(s::Union{String, SubString{String}}, sep::UInt8=UInt8('_'))
+    p = let
+        _p = findlast(isequal(sep), codeunits(s))
+        _p === nothing ? error("Sep '", Char(sep), "' not found in header \"", s, '"') : _p
+    end
+    lastpart = view(s, p+1:lastindex(s))
+    if tryparse(Segment, lastpart) === nothing
+        error("Cannot parse as segment: \"", lastpart, '"')
+    end
+    return view(s, 1:prevind(s, p))
 end
 
 """

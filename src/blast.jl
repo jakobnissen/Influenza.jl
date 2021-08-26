@@ -116,7 +116,9 @@ function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
     for (query, hits) in byquery
         for hit in hits
             if hit.len / hit.qlen ≥ lenratio && hit.ident ≥ 0.8
-                result[hit.query] = some(hit.subject)
+                # The result has format NAME_SEGMENT, but the refs in the jls file
+                # does not have the trailing segment, so we strip it off here.
+                result[hit.query] = some(String(strip_trailing_segment(hit.subject)))
                 break
             end
         haskey(result, query) || (result[query] = none(String))
