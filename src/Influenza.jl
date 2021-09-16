@@ -9,9 +9,9 @@ using ErrorTypes
 using FASTX
 using InfluenzaCore
 using StructTypes # for JSON (de)serialization
+using JSON3
 using BioSequences
 using BioAlignments
-using Serialization
 using Printf
 
 imap(f) = x -> Iterators.map(f, x)
