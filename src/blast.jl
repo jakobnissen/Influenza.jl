@@ -2,11 +2,11 @@
 tovec(x) = x isa Vector ? x : vec(collect(x))
 
 """
-    annotate(itr, jls_path, fna_path) -> Vector{Option{AlignedAssembly}}
+    annotate(itr, json_path, fna_path) -> Vector{Option{AlignedAssembly}}
 
 Annotate `itr`, a vector of `FASTA.Record` or iterator of `Assembly`, yielding
 a vector of `Option{AlignedAssembly}`, with error values where no reference could
-be matched. `jls_path` and `fna_path` must be paths to serialization and FASTA
+be matched. `json_path` and `fna_path` must be paths to serialization and FASTA
 file produced by `Influenza.store_references.` It is recommended that then references
 broadly represent various clades, so a relatively close hit can be found.
 
@@ -19,11 +19,11 @@ function annotate end
 
 function annotate(
     itr,
-    jls_path::AbstractString,
+    json_path::AbstractString,
     fna_path::AbstractString,
 )
     # Check presence of files
-    for path in (jls_path, fna_path)
+    for path in (json_path, fna_path)
         isfile(path) || error("File not found: \"$path\"")
     end
 
@@ -58,7 +58,7 @@ function annotate(
     end
 
     # Load references
-    loaded_refs = load_references(jls_path)
+    loaded_refs = load_references(json_path)
     references = fill(none(Reference), length(assembly_vec))
     for ref in loaded_refs
         vecnums = get(best_hits, ref.name, nothing)
@@ -78,13 +78,13 @@ end
 
 function annotate(
     recs::Vector{FASTA.Record},
-    jls_path::AbstractString,
+    json_path::AbstractString,
     fna_path::AbstractString,
 )
     assemblies = map(recs) do rec
         Assembly(rec, nothing)
     end
-    annotate(assemblies, jls_path, fna_path)
+    annotate(assemblies, json_path, fna_path)
 end
 
 function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
@@ -116,7 +116,7 @@ function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
     for (query, hits) in byquery
         for hit in hits
             if hit.len / hit.qlen ≥ lenratio && hit.ident ≥ 0.8
-                # The result has format NAME_SEGMENT, but the refs in the jls file
+                # The result has format NAME_SEGMENT, but the refs in the json file
                 # does not have the trailing segment, so we strip it off here.
                 result[hit.query] = some(String(strip_trailing_segment(hit.subject)))
                 break
