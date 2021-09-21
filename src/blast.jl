@@ -2,13 +2,16 @@
 tovec(x) = x isa Vector ? x : vec(collect(x))
 
 """
-    annotate(itr, json_path, fna_path) -> Vector{Option{AlignedAssembly}}
+    annotate(itr, json_path, subject, mmpath) -> Vector{Option{AlignedAssembly}}
 
 Annotate `itr`, a vector of `FASTA.Record` or iterator of `Assembly`, yielding
 a vector of `Option{AlignedAssembly}`, with error values where no reference could
-be matched. `json_path` and `fna_path` must be paths to serialization and FASTA
-file produced by `Influenza.store_references.` It is recommended that then references
-broadly represent various clades, so a relatively close hit can be found.
+be matched. `json_path` must be path to serialization and FASTA
+file produced by `Influenza.store_references.` The `subject` can be a FASTA file
+of the same sequences as the JSON, or an mmseqs database. `mmseqs` can be `nothing`,
+or the path of the mmseqs `tmp` directory, for speed.
+It is recommended that then references broadly represent various clades,
+so a relatively close hit can be found.
 
 # Extended help
 This function works by using running `blastn` in a temporary directory and
@@ -17,21 +20,55 @@ fairly slow for hundreds of sequences, using >100 ms per seq.
 """
 function annotate end
 
+# Convert records to vector of assembly, then dispatch
+function annotate(recs::Vector{FASTA.Record}, args...)
+    assemblies = map(recs) do rec
+        Assembly(rec, nothing)
+    end
+    annotate(assemblies, args...)
+end
+
+# Convert iterable to vector of assembly, then dispatch
+function annotate(itr, args...)
+    assemblies = tovec(itr)::Vector{Assembly}
+    annotate(assemblies, args...)
+end
+
+# Check paths
 function annotate(
-    itr,
+    itr::Vector{Assembly},
     json_path::AbstractString,
     fna_path::AbstractString,
+    mm_tmpdir::Union{Nothing, AbstractString}=nothing,
 )
     # Check presence of files
-    for path in (json_path, fna_path)
-        isfile(path) || error("File not found: \"$path\"")
+    for path in (json_path, fna_path, mm_tmpdir)
+        if !isnothing(path) && !ispath(path)
+            error("File not found: \"$path\"")
+        end
     end
 
-    # Collect to vector of assembly
-    assembly_vec::Vector{Assembly} = tovec(itr)
+    tmp_dir = mktempdir()
+    mm_tmpdir = if mm_tmpdir === nothing
+        mktempdir(tmp_dir)
+    else
+        mm_tmpdir
+    end
+
+    _annotate(itr, json_path, fna_path, tmp_dir, mm_tmpdir)
+end
+
+function _annotate(
+    assembly_vec::Vector{Assembly},
+    json_path::AbstractString,
+    fna_path::AbstractString,
+    tmp_dir::AbstractString,
+    mm_tmpdir::AbstractString,
+)
+    # Check presence of mmseqs
+    run(pipeline(`which mmseqs`, stdout=devnull))
 
     # Write FASTA to temp file. We name the records by index, e.g. 1, 2, 3...
-    tmp_dir = tempdir()
     (tmp_path, tmp_file) = mktemp(tmp_dir)
     writer = FASTA.Writer(tmp_file)
     for (i, assembly::Assembly) in pairs(assembly_vec)
@@ -41,8 +78,7 @@ function annotate(
 
     # Run blastn
     blast_path = tempname(tmp_dir)
-    command = `blastn -query $tmp_path -subject $fna_path -outfmt "6 qacc sacc bitscore qlen length pident"`
-    run(pipeline(command, stdout=blast_path))
+    mmseqs_search(tmp_path, fna_path, blast_path, mm_tmpdir, tempname(tmp_dir))
 
     # Parse blastn output to Dict{String, Vector{Int}} of subject => [n_assembly ... ]
     best_hits::Dict{String, Vector{Int}} = let
@@ -71,20 +107,28 @@ function annotate(
         end
     end
 
-    map(zip(assembly_vec, references)) do (assembly, maybe_ref)
-        and_then(ref -> AlignedAssembly(assembly, ref), AlignedAssembly, maybe_ref)
+    result = Vector{Option{AlignedAssembly}}(undef, length(references))
+    Threads.@threads for i in eachindex(result)
+        asm = assembly_vec[i]
+        mref = references[i]
+        v = and_then(ref -> AlignedAssembly(asm, ref), AlignedAssembly, mref)
+        result[i] = v
     end
+    return result
 end
 
-function annotate(
-    recs::Vector{FASTA.Record},
-    json_path::AbstractString,
-    fna_path::AbstractString,
+function mmseqs_search(
+    query::AbstractString,
+    target::AbstractString,
+    result::AbstractString,
+    tmpdir::AbstractString,
+    stdout::AbstractString
 )
-    assemblies = map(recs) do rec
-        Assembly(rec, nothing)
-    end
-    annotate(assemblies, json_path, fna_path)
+    # Search type 3 is nucleotide, the rest means "fast but insensitive".
+    cmd = `mmseqs easy-search $query $target $result $tmpdir
+    --search-type 3 --exact-kmer-matching 1 -s 1
+    --format-output "query,target,bits,qlen,alnlen,pident"`
+    run(pipeline(cmd, stdout=stdout))
 end
 
 function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}

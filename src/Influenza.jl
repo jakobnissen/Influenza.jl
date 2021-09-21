@@ -12,7 +12,7 @@ using StructTypes: StructTypes # for JSON (de)serialization
 using JSON3: JSON3
 using BioSequences: BioSequences, LongDNASeq, LongAminoAcidSeq, NucleotideSeq,
     BioSequence, DNACodon, @mer_str, isgap, @aa_str, @biore_str, NucleicAcidAlphabet,
-    DNA
+    DNA, DNA_Gap
 using BioAlignments: BioAlignments
 using Printf: Printf, @sprintf
 

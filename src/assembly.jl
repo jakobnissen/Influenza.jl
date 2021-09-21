@@ -331,7 +331,7 @@ function AlignedAssembly(asm::Assembly, ref::Reference, force_termini::Bool=fals
     iszero(n_insignificant) || push!(errors, ErrorInsignificant(n_insignificant))
 
     # Ambiguous bases
-    n_amb = count(isambiguous, asm.seq)
+    n_amb = count(BioSequences.isambiguous, asm.seq)
     iszero(n_amb) || push!(errors, ErrorAmbiguous(n_amb))
 
     # Termini. If we force termini to be present in ref, we add an error if it's
@@ -408,11 +408,11 @@ function check_termini(
     max_subs::Integer=2
 )::Tuple{Union{Nothing, ErrorNoTermini}, Union{Nothing, ErrorLinkerContamination}}
     ref = aln.b
-    rng_fw = approxsearch(
+    rng_fw = BioSequences.approxsearch(
         ref, TERMINAL_INFLUENZA_5, max_subs, 1,
         lastindex(TERMINAL_INFLUENZA_5)+max_subs
     )
-    rng_rv = approxrsearch(
+    rng_rv = BioSequences.approxrsearch(
         ref, TERMINAL_INFLUENZA_3, max_subs, lastindex(ref),
         lastindex(ref)-lastindex(TERMINAL_INFLUENZA_3)+1-max_subs
     )
