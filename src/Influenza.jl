@@ -5,14 +5,18 @@ It is distinct from `InfluenzaCore` in that it is a more heavyweight dependency,
 """
 module Influenza
 
-using ErrorTypes
-using FASTX
-using InfluenzaCore
-using StructTypes # for JSON (de)serialization
-using JSON3
-using BioSequences
-using BioAlignments
-using Printf
+using ErrorTypes: Option, some, none, is_error, unwrap, unwrap_or, @unwrap_or, and_then
+using FASTX: FASTA
+using InfluenzaCore: Segment, Protein, Segments, SeroType, Proteins, source
+using StructTypes: StructTypes # for JSON (de)serialization
+using JSON3: JSON3
+using BioSequences: BioSequences, LongDNASeq, LongAminoAcidSeq, NucleotideSeq,
+    BioSequence, DNACodon, @mer_str, isgap, @aa_str, @biore_str, NucleicAcidAlphabet,
+    DNA
+using BioAlignments: BioAlignments
+using Printf: Printf, @sprintf
+
+const BA = BioAlignments
 
 imap(f) = x -> Iterators.map(f, x)
 ifilter(f) = x -> Iterators.filter(f, x)

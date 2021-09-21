@@ -96,7 +96,7 @@ end
 
 function AssemblyProtein(
     protein::ReferenceProtein,
-    aln::PairwiseAlignment{LongDNASeq, LongDNASeq},
+    aln::BA.PairwiseAlignment{LongDNASeq, LongDNASeq},
     ref::Reference
 )
     coding_mask = falses(length(ref.seq))
@@ -109,7 +109,7 @@ function AssemblyProtein(
     ref_aas = (i for (i,n) in zip(ref.seq, coding_mask) if n)
     # Last 3 nts are the stop codon
     refaa = BioSequences.translate(LongDNASeq(collect(ref_aas)[1:end-3]))
-    aaaln = pairalign(GlobalAlignment(), aaseq, refaa, DEFAULT_AA_ALN_MODEL).aln
+    aaaln = BA.pairalign(BA.GlobalAlignment(), aaseq, refaa, DEFAULT_AA_ALN_MODEL).aln
     @assert aaaln !== nothing
 
     # The orfseq can be empty if the alignment has sufficiently low identity.
@@ -142,7 +142,7 @@ and the referece segment that contains that protein.
 function compare_proteins_in_alignment(
     protein::ReferenceProtein,
     coding_mask::BitVector,
-    aln::PairwiseAlignment{LongDNASeq, LongDNASeq}
+    aln::BA.PairwiseAlignment{LongDNASeq, LongDNASeq}
 )::Tuple{LongDNASeq, Vector{UnitRange{UInt32}}, Vector{ProteinError}, Vector{Indel}}
     nucleotides = sizehint!(DNA[], 1200)
     last_coding_ref_pos = last(last(protein.orfs))
@@ -303,7 +303,7 @@ See the fields of the struct for the information contained.
 struct AlignedAssembly
     assembly::Assembly
     reference::Reference
-    aln::PairwiseAlignment{LongDNASeq, LongDNASeq}
+    aln::BA.PairwiseAlignment{LongDNASeq, LongDNASeq}
     identity::Float64
     proteins::Vector{AssemblyProtein}
     errors::Vector{Union{ErrorLowIdentity, SegmentError}}
@@ -315,10 +315,10 @@ function AlignedAssembly(asm::Assembly, ref::Reference, force_termini::Bool=fals
     end
 
     # For optimization: The large majority of time is spent on this alignment
-    aln = pairalign(OverlapAlignment(), asm.seq, ref.seq, DEFAULT_DNA_ALN_MODEL).aln
+    aln = BA.pairalign(BA.OverlapAlignment(), asm.seq, ref.seq, DEFAULT_DNA_ALN_MODEL).aln
     @assert aln !== nothing
 
-    identity = alignment_identity(OverlapAlignment(), aln)::Float64
+    identity = alignment_identity(BA.OverlapAlignment(), aln)::Float64
 
     proteins = map(ref.proteins) do protein
         AssemblyProtein(protein, aln, ref)
@@ -403,7 +403,7 @@ check. If the termini are not found in the reference, `force` causes it to throw
 If `force` is `false`, return  `(nothing, nothing)`.
 """
 function check_termini(
-    aln::PairwiseAlignment{<:NucleotideSeq, <:NucleotideSeq},
+    aln::BA.PairwiseAlignment{<:NucleotideSeq, <:NucleotideSeq},
     force::Bool=true,
     max_subs::Integer=2
 )::Tuple{Union{Nothing, ErrorNoTermini}, Union{Nothing, ErrorLinkerContamination}}

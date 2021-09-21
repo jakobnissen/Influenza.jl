@@ -12,3 +12,13 @@ InfluenzaCore = "75be95bb-60e3-4423-b8b7-0f2a09593d53"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 StructTypes = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
+
+[compat]
+julia = "1.6"
+BioAlignments = "2"
+BioSequences = "2"
+ErrorTypes = "0.5"
+FASTX = "1.2"
+InfluenzaCore = "0.1.1"
+JSON3 = "1.9"
+StructTypes = "1.7"

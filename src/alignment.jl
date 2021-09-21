@@ -4,7 +4,7 @@
 Affine Gap Score model with parameters empirically chosen to strike a sensible balance between
 indels and substitutions for DNA alignments.
 """
-const DEFAULT_DNA_ALN_MODEL = AffineGapScoreModel(EDNAFULL, gap_open=-25, gap_extend=-2)
+const DEFAULT_DNA_ALN_MODEL = BA.AffineGapScoreModel(BA.EDNAFULL, gap_open=-25, gap_extend=-2)
 
 """
     DEFAULT_AA_ALN_MODEL
@@ -12,7 +12,7 @@ const DEFAULT_DNA_ALN_MODEL = AffineGapScoreModel(EDNAFULL, gap_open=-25, gap_ex
 Affine Gap Score model with parameters empirically chosen to strike a sensible balance between
 indels and substitutions for amino acid alignments.
 """
-const DEFAULT_AA_ALN_MODEL = AffineGapScoreModel(BLOSUM62, gap_open=-10, gap_extend=-2)
+const DEFAULT_AA_ALN_MODEL = BA.AffineGapScoreModel(BA.BLOSUM62, gap_open=-10, gap_extend=-2)
 
 """
     alignment_identity([m::AbstractAlignment], ::PairwiseAlignment)
@@ -26,15 +26,15 @@ If the shorter seq has zero length, returns `nothing`.
 """
 function alignment_identity end
 
-function alignment_identity(aln::PairwiseAlignment{T, T}) where {T <: BioSequence}
-    alignment_identity(GlobalAlignment(), aln)
+function alignment_identity(aln::BA.PairwiseAlignment{T, T}) where {T <: BioSequence}
+    alignment_identity(BA.GlobalAlignment(), aln)
 end
 
-function alignment_identity(::GlobalAlignment, aln::PairwiseAlignment{T, T}) where {T <: BioSequence}
+function alignment_identity(::BA.GlobalAlignment, aln::BA.PairwiseAlignment{T, T}) where {T <: BioSequence}
     alignment_identity(collect(aln))
 end
 
-function alignment_identity(::OverlapAlignment, aln::PairwiseAlignment{T, T}) where {T <: BioSequence}
+function alignment_identity(::BA.OverlapAlignment, aln::BA.PairwiseAlignment{T, T}) where {T <: BioSequence}
     v = collect(aln)
     p = findfirst(t -> !isgap(t[1]) & !isgap(t[2]), v)
     p === nothing && return nothing
