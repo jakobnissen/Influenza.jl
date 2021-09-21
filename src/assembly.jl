@@ -425,7 +425,6 @@ function check_termini(
     end
     anchors = aln.a.aln.anchors
     isempty(anchors) && return (nothing, nothing)
-    errors = Union{ErrorNoTermini, ErrorLinkerContamination}[]
     missfive, missthree = false, false
     contfive, contthree = nothing, nothing
     if anchors[2].op === BioAlignments.OP_DELETE
@@ -436,7 +435,7 @@ function check_termini(
     if anchors[end].op === BioAlignments.OP_DELETE
         missthree = true
     elseif anchors[end].op === BioAlignments.OP_INSERT
-        conthree = UInt32(anchors[end].seqpos - anchors[end-1].seqpos)
+        contthree = UInt32(anchors[end].seqpos - anchors[end-1].seqpos)
     end
     fst = !(missfive | missthree) ? nothing : ErrorNoTermini(missfive, missthree)
     scn = if (contfive === nothing) & (contthree === nothing)
