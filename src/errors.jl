@@ -71,7 +71,7 @@ struct ErrorTooShort <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorTooShort)
-    print(io, "Sequence too short at ", x,len, (isone(x.len) ? " base" : " bases"))
+    print(io, "Sequence too short at ", x.len, (isone(x.len) ? " base" : " bases"))
 end
 
 "Too many bases are insignificantly called in the sequence"
