@@ -131,24 +131,19 @@ function mmseqs_search(
     run(pipeline(cmd, stdout=stdout))
 end
 
+@eval $(BlastParse.gen_blastparse_code(
+    (:qacc, :sacc, :bitscore, :qlen, :length, :pident),
+    :parse_blast_io
+))
+
 function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
     # Parse to vector of hits
-    hits = eachline(io) |> imap(strip) |> ifilter(!isempty) |> imap() do line
-        fields = split(line, '\t')
-        @assert length(fields) == 6
-        query = parse(Int, fields[1])
-        subject = String(fields[2])
-        bitscore = parse(Float64, fields[3])
-        qlen = parse(UInt, fields[4])
-        len = parse(UInt, fields[5])
-        ident = parse(Float64, fields[6]) / 100
-        (; query, subject, bitscore, qlen, len, ident)
-    end |> collect
+    hits = parse_blast_io(io)
 
     # Group by query sequence, sort by bitscore
     byquery = Dict{Int, Vector{eltype(hits)}}()
     for hit in hits
-        push!(get!(Vector{eltype(hits)}, byquery, hit.query), hit)
+        push!(get!(valtype(byquery), byquery, parse(Int, hit.qacc)), hit)
     end
 
     foreach(values(byquery)) do hits
@@ -159,10 +154,10 @@ function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
     result = Dict{Int, Option{String}}()
     for (query, hits) in byquery
         for hit in hits
-            if hit.len / hit.qlen ≥ lenratio && hit.ident ≥ 0.8
+            if hit.length / hit.qlen ≥ lenratio && hit.pident ≥ 0.8
                 # The result has format NAME_SEGMENT, but the refs in the json file
                 # does not have the trailing segment, so we strip it off here.
-                result[hit.query] = some(String(strip_trailing_segment(hit.subject)))
+                result[parse(Int, hit.qacc)] = some(String(strip_trailing_segment(hit.sacc)))
                 break
             end
         haskey(result, query) || (result[query] = none(String))

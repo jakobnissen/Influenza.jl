@@ -15,6 +15,7 @@ using BioSequences: BioSequences, LongDNASeq, LongAminoAcidSeq, NucleotideSeq,
     DNA, DNA_Gap
 using BioAlignments: BioAlignments
 using Printf: Printf, @sprintf
+using BlastParse: BlastParse
 
 const BA = BioAlignments
 
