@@ -384,7 +384,7 @@ function translate_proteins(alnasm::AlignedAssembly)
                 append!(dnaseq, alnasm.assembly.seq[orf])
             end
             resize!(dnaseq, length(dnaseq) - length(dnaseq) % 3)
-            push!(result, some(translate(dnaseq)))
+            push!(result, some(BioSequences.translate(dnaseq)))
         end
     end
     return result
