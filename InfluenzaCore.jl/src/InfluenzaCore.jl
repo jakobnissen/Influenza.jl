@@ -31,6 +31,7 @@ end
 using .Segments
 
 const STRING_SEGMENT_DICT = Dict(string(s)=>s for s in instances(Segment))
+STRING_SEGMENT_DICT["M"] = Segments.MP
 Base.tryparse(::Type{Segment}, s::AbstractString) = get(STRING_SEGMENT_DICT, strip(s), nothing)
 function Base.parse(::Type{Segment}, s::AbstractString)
     s = tryparse(Segment, s)
