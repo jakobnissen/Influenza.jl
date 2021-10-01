@@ -1,4 +1,4 @@
 name = "InfluenzaCore"
 uuid = "75be95bb-60e3-4423-b8b7-0f2a09593d53"
 authors = ["Jakob Nybo Nissen <jakobnybonissen@gmail.com>"]
-version = "0.1.2"
+version = "0.1.3"

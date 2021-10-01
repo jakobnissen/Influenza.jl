@@ -34,8 +34,8 @@ const STRING_SEGMENT_DICT = Dict(string(s)=>s for s in instances(Segment))
 STRING_SEGMENT_DICT["M"] = Segments.MP
 Base.tryparse(::Type{Segment}, s::AbstractString) = get(STRING_SEGMENT_DICT, strip(s), nothing)
 function Base.parse(::Type{Segment}, s::AbstractString)
-    s = tryparse(Segment, s)
-    s === nothing ? throw(ArgumentError("Cannot parse as Segment: \"$s\"")) : s
+    seg = tryparse(Segment, s)
+    seg === nothing ? throw(ArgumentError("Cannot parse as Segment: \"$s\"")) : seg
 end
 
 baremodule Proteins
@@ -102,8 +102,8 @@ using .Proteins
 
 Base.tryparse(::Type{Protein}, s::AbstractString) = get(Proteins._STR_PROTEINVARIANT, strip(s), nothing)
 function Base.parse(::Type{Protein}, s::AbstractString)
-    s = tryparse(Protein, s)
-    s === nothing ? throw(ArgumentError("Cannot parse as Protein: \"$s\"")) : s
+    p = tryparse(Protein, s)
+    p === nothing ? throw(ArgumentError("Cannot parse as Protein: \"$s\"")) : p
 end
 
 const PROTEIN_TO_SEGMENT = Tuple(UInt8[0,1,1,1,2,2,3,4,5,5,6,6,6,6,7,7,7])
@@ -170,8 +170,8 @@ function Base.tryparse(::Type{SeroType}, x::AbstractString)
     return SeroType(H, N)
 end
 function Base.parse(::Type{SeroType}, s::AbstractString)
-    s = tryparse(SeroType, s)
-    s === nothing ? throw(ArgumentError("Cannot parse as SeroType: \"$s\"")) : s
+    st = tryparse(SeroType, s)
+    st === nothing ? throw(ArgumentError("Cannot parse as SeroType: \"$s\"")) : st
 end
 
 export Segment, Segments, SeroType, Proteins, Protein, source
