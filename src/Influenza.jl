@@ -58,7 +58,6 @@ export TERMINAL_INFLUENZA_5,
     AlignedAssembly,
 
     translate_reference,
-
     translate_proteins,
     alignment_identity,
     ha0_cleavage,

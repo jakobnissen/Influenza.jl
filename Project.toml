@@ -1,7 +1,7 @@
 name = "Influenza"
 uuid = "094bb4ec-04e4-4f11-bf12-e5749f7dd418"
 authors = ["Jakob Nybo Nissen <jakobnybonissen@gmail.com>"]
-version = "0.4.5"
+version = "0.4.6"
 
 [deps]
 BioAlignments = "00701ae9-d1dc-5365-b64a-a3a3ebf5695e"
