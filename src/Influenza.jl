@@ -153,7 +153,7 @@ export TERMINAL_INFLUENZA_5,
     annotate,
 
     try_parseout_suffix,
-    parseout_suffix
+    parseout_suffix,
 
     # Exports from InfluenzaCore
     Segment, Segments, SeroType, Proteins, Protein, source

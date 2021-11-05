@@ -105,6 +105,8 @@ function AssemblyProtein(
     end
 
     orfseq, orfs, errors, indels = compare_proteins_in_alignment(protein, coding_mask, aln)
+    remainder = rem(length(orfseq), 3)
+    iszero(remainder) || resize!(orfseq, length(orfseq)-remainder)
     aaseq = BioSequences.translate(orfseq)
     ref_aas = (i for (i,n) in zip(ref.seq, coding_mask) if n)
     # Last 3 nts are the stop codon
@@ -271,17 +273,8 @@ function compare_proteins_in_alignment(
         push!(errors, ErrorNoStop())
     end
 
-    # Add final orf after loop. We make sure to truncate the ORF sequence to
-    # a multiple of 3 if it is not already
-    if seg_orfstart !== nothing
-        lastorf = UInt16(seg_orfstart):UInt16(seg_pos)
-        remainder = (sum(length, orfs, init=0) + length(lastorf)) % 3
-        resize!(nucleotides, length(nucleotides) - remainder)
-        if length(lastorf) != remainder
-            push!(orfs, first(lastorf):(last(lastorf)-remainder))
-        end
-    end
-
+    # Add final orf after loop.
+    seg_orfstart === nothing || push!(orfs, UInt16(seg_orfstart):UInt16(seg_pos))
     dnaseq = LongDNASeq(nucleotides)
     return dnaseq, orfs, errors, indels
 end
