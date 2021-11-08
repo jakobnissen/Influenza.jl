@@ -124,6 +124,54 @@ function AssemblyProtein(
     return AssemblyProtein(protein.var, orfs, identity, errors)
 end
 
+# I absolutely hate doing this. But if there is a deletion exactly around the edges of
+# an orf - which can happen spuriously if the exact position of an indel is unknowable,
+# then the AlignedAssembly will not work because the ORF positions will be thrown off.
+# This function moves a deletion in the query a few bases if so.
+# E.g in the start codon ATG here:
+#  seq:    1 GGAAAA--TGATTGCA
+#            ||||||  ||||||||
+#  ref:    1 GGAAAAAATGATTGCA
+# It's clear the indel is misplaced.
+function reorder_deletions!(aln::BA.PairwiseAlignment, p::Integer, start::Bool)
+    anchors = aln.a.aln.anchors
+    anchorpos = searchsortedfirst(anchors, p, by=a -> a isa BA.AlignmentAnchor ? a.refpos : a)
+    anchor = anchors[anchorpos]
+    # Whether we should move bases from before deletion or after deletion.
+    # we move bases from outside the ORF.
+    delta = ifelse(start, -1, 1)
+    in(anchorpos + 2delta, eachindex(anchors)) || return nothing
+    anchor.op == BA.OP_DELETE || return nothing
+    n_move = anchor.refpos - p + 1
+    # Let's not move too many bases
+    n_move > 5 && return nothing
+    next = anchors[anchorpos + delta]
+    next2 = anchors[anchorpos + 2delta]
+    # If there are not enough bases to move, we just return nothing.
+    # it is possible to do it even if there are not enough bases, but it requires
+    # this function to rewrite the number of anchors, so it complicates it.
+    # This probably happens rarely if the sequences are otherwise good.
+    if abs(next2.seqpos - next.seqpos) ≤ n_move
+        return nothing
+    end
+    anchors[anchorpos] = BA.AlignmentAnchor(
+        anchor.seqpos + n_move * delta,
+        anchor.refpos + n_move * delta,
+        BA.OP_DELETE
+    )
+    anchors[anchorpos + delta] = BA.AlignmentAnchor(
+        next.seqpos + n_move * delta,
+        next.refpos + n_move * delta,
+        next.op
+    )
+    return nothing
+end
+
+function reorder_deletions!(aln::BA.PairwiseAlignment, orf::AbstractUnitRange)
+    reorder_deletions!(aln, first(orf), true)
+    reorder_deletions!(aln, last(orf), false)
+end
+
 """
     is_stop(x::DNACodon)
 
@@ -311,6 +359,12 @@ function AlignedAssembly(asm::Assembly, ref::Reference, force_termini::Bool=fals
     aln = BA.pairalign(BA.OverlapAlignment(), asm.seq, ref.seq, DEFAULT_DNA_ALN_MODEL).aln
     @assert aln !== nothing
 
+    # Move around deletions in query if they straddle an edge of an ORF.
+    # Ugly hack, but I don't know how to deal with it otherwise
+    for protein in ref.proteins, orf in protein.orfs
+        reorder_deletions!(aln, orf)
+    end
+
     identity = alignment_identity(BA.OverlapAlignment(), aln)::Float64
 
     proteins = map(ref.proteins) do protein
@@ -438,6 +492,8 @@ function check_termini(
     end
     return (fst, scn)
 end
+
+
 
 
 
