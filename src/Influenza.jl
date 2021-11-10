@@ -37,7 +37,7 @@ const INFLUENZA_VERSION = let
 end
 
 # These are simply wrappers around strings, that remove whitespace
-for T in (:Sample,)
+for T in (:Sample, :Clade)
     @eval begin
         struct $T
             name::String
@@ -126,17 +126,47 @@ struct Maybe end
 include("errors.jl")
 include("alignment.jl")
 include("assembly.jl")
-include("serialization.jl")
 include("blast.jl")
 
 # This is type piracy, but hopefully it's OK!
 StructTypes.StructType(::Type{<:BioSequence}) = StructTypes.StringType()
 StructTypes.StructType(::Type{<:AbstractUnitRange}) = StructTypes.Struct()
 
+"""
+    store_references(dst::Union{IO, AbstractString}, ref_itr)
+
+Serialize to file at path or IO `dst` an iterable of `Reference}.
+"""
+function store_references end
+
+function store_references(io::IO, reference_itr)
+    JSON3.write(io, vec(collect(reference_itr))::Vector{Reference})
+end
+
+function store_references(path::AbstractString, reference_itr)
+    open(path, "w") do io
+        store_references(io, reference_itr)
+    end
+end
+
+"""
+    load_references(file::AbstractString)
+
+Loads a JSON file created by `store_references`. If the version number of the
+Influenza package used to serialize the JSON is not compatible with the version
+number of `Influenza` used to load, throw an error.
+"""
+function load_references(file::AbstractString)
+    open(file) do io
+        JSON3.read(io, Vector{Reference})
+    end
+end
+
 export TERMINAL_INFLUENZA_5,
     TERMINAL_INFLUENZA_3,
 
     Sample,
+    Clade,
     Assembly,
     AssemblyProtein,
     Reference,
@@ -154,6 +184,8 @@ export TERMINAL_INFLUENZA_5,
 
     try_parseout_suffix,
     parseout_suffix,
+    split_segment,
+    split_protein,
 
     # Exports from InfluenzaCore
     Segment, Segments, SeroType, Proteins, Protein, source
