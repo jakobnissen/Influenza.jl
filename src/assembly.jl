@@ -144,8 +144,9 @@ function reorder_deletions!(aln::BA.PairwiseAlignment, p::Integer, start::Bool)
     anchor.op == BA.OP_DELETE || return nothing
     n_move = anchor.refpos - p + 1
     # Let's not move too many bases
-    n_move > 5 && return nothing
+    n_move > 10 && return nothing
     next = anchors[anchorpos + delta]
+    next.op ∈ (BA.OP_MATCH, BA.OP_SEQ_MISMATCH, BA.OP_SEQ_MATCH) || return nothing
     next2 = anchors[anchorpos + 2delta]
     # If there are not enough bases to move, we just return nothing.
     # it is possible to do it even if there are not enough bases, but it requires
@@ -154,6 +155,23 @@ function reorder_deletions!(aln::BA.PairwiseAlignment, p::Integer, start::Bool)
     if abs(next2.seqpos - next.seqpos) ≤ n_move
         return nothing
     end
+
+    # Check if the modified alignment has as many matches as the old one
+    query = if start
+        aln.a.seq[next.seqpos - n_move+1 : next.seqpos]
+    else
+        aln.a.seq[anchor.seqpos+1:anchor.seqpos+n_move]
+    end
+    ref1 = if start
+        aln.b[next.refpos - n_move+1 : next.refpos]
+    else
+        aln.b[anchor.refpos+1 : anchor.refpos+n_move]
+    end
+    ref2 = aln.b[p-n_move+1:p]
+    if count(Base.splat(==), zip(query, ref1)) > count(Base.splat(==), zip(query, ref2))
+        return nothing
+    end
+
     anchors[anchorpos] = BA.AlignmentAnchor(
         anchor.seqpos + n_move * delta,
         anchor.refpos + n_move * delta,
