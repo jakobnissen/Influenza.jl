@@ -157,7 +157,7 @@ function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
             if hit.length / hit.qlen ≥ lenratio && hit.pident ≥ 0.8
                 # The result has format NAME_SEGMENT, but the refs in the json file
                 # does not have the trailing segment, so we strip it off here.
-                result[parse(Int, hit.qacc)] = some(String(first(split_segment(hit.sacc))))
+                result[parse(Int, hit.qacc)] = some(String(hit.sacc))
                 break
             end
         haskey(result, query) || (result[query] = none(String))

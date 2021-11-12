@@ -28,14 +28,6 @@ const TERMINAL_INFLUENZA_5 = mer"AGCAAAAGCAGG"dna
 "Conserved sequence at influenza segment 3' end"
 const TERMINAL_INFLUENZA_3 = mer"CTTGTTTCTCCT"dna
 
-const INFLUENZA_VERSION = let
-    p = pathof(Influenza)::String
-    project = joinpath(dirname(dirname(p)), "Project.toml")
-    toml = read(project, String)
-    m = match(r"(*ANYCRLF)^version\s*=\s\"(.*)\"$"m, toml)::RegexMatch
-    VersionNumber(m[1]::SubString{String})
-end
-
 # These are simply wrappers around strings, that remove whitespace
 for T in (:Sample, :Clade)
     @eval begin
@@ -44,6 +36,7 @@ for T in (:Sample, :Clade)
 
             function $T(s::Union{String, SubString{String}})
                 str = strip(s)
+                isempty(str) && error("String must be nonempty!")
                 if str == s
                     new(s isa String ? s : String(s))
                 else
@@ -51,6 +44,13 @@ for T in (:Sample, :Clade)
                 end
             end
         end
+
+        function Base.tryparse(::Type{$T}, s::AbstractString)
+            str = strip(s)
+            isempty(str) ? nothing : $T(str)
+        end
+
+        Base.parse(::Type{$T}, s::AbstractString) = $T(s)
 
         function $T(s::AbstractString)
             $T(convert(String, s))
@@ -102,6 +102,7 @@ end
 
 split_segment(s) = parseout_suffix(Segment, s, '_')
 split_protein(s) = parseout_suffix(Protein, s, '_')
+split_clade(s) = parseout_suffix(Clade, s, '_')
 
 """
     groupby(f, itr)
@@ -186,6 +187,7 @@ export TERMINAL_INFLUENZA_5,
     parseout_suffix,
     split_segment,
     split_protein,
+    split_clade,
 
     # Exports from InfluenzaCore
     Segment, Segments, SeroType, Proteins, Protein, source
