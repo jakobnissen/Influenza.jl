@@ -22,7 +22,8 @@ n_matches divided by the ungapped length of the longest seq.
 If `m` is `GlobalAlignment()`, as is default, include all nucleotides in alignment.
 If `m` is `OverlapAlignment()`, do not include positions with gaps at the end.
 
-If the shorter seq has zero length, returns `nothing`.
+If the shorter seq has zero length, or the identity is so low it cannot be
+reliably computed, returns `nothing`.
 """
 function alignment_identity end
 
@@ -35,11 +36,28 @@ function alignment_identity(::BA.GlobalAlignment, aln::BA.PairwiseAlignment{T, T
 end
 
 function alignment_identity(::BA.OverlapAlignment, aln::BA.PairwiseAlignment{T, T}) where {T <: BioSequence}
+    # At lower than about 40% identity, the validity of the assumptions
+    # in the algorithm begins to break down.
+    count_matches(aln) / count_aligned(aln) > 0.4 || return nothing
+
     v = collect(aln)
-    p = findfirst(t -> !isgap(t[1]) & !isgap(t[2]), v)
-    p === nothing && return nothing
-    pend = findlast(t -> !isgap(t[1]) & !isgap(t[2]), v)::Int
-    alignment_identity(view(v, p:pend))
+    astart = findfirst(t -> !isgap(t[1]), v)
+    astop = findlast(t -> !isgap(t[1]), v)
+    bstart = findfirst(t -> !isgap(t[2]), v)
+    bstop = findlast(t -> !isgap(t[2]), v)
+    if astart === nothing || bstart === nothing
+        return nothing
+    end
+    range = if astart > bstart && astop < bstop
+        astart:astop
+    elseif astart > bstart && astop > bstop
+        bstart:bstop
+    elseif length(astart:astop) > length(bstart:bstop)
+        bstart:bstop
+    else
+        astart:astop
+    end
+    alignment_identity(view(v, range))
 end
 
 function alignment_identity(v::AbstractVector{Tuple{S, S}}) where {S <: BioSequences.BioSymbol}
