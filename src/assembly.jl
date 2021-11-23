@@ -410,6 +410,21 @@ function AlignedAssembly(asm::Assembly, ref::Reference, force_termini::Bool=fals
     return AlignedAssembly(asm, ref, aln, identity, proteins, errors)
 end
 
+function Reference(x::AlignedAssembly)
+    proteins = map(x.proteins) do protein
+        ReferenceProtein(
+            protein.variant,
+            unwrap(protein.orfs)
+        )
+    end
+    Reference(
+        x.assembly.name,
+        x.reference.segment,
+        x.assembly.seq,
+        proteins
+    )
+end
+
 """
     translate_reference(::AlignedAssembly)
 

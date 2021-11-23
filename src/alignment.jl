@@ -41,23 +41,10 @@ function alignment_identity(::BA.OverlapAlignment, aln::BA.PairwiseAlignment{T, 
     count_matches(aln) / count_aligned(aln) > 0.4 || return nothing
 
     v = collect(aln)
-    astart = findfirst(t -> !isgap(t[1]), v)
-    astop = findlast(t -> !isgap(t[1]), v)
-    bstart = findfirst(t -> !isgap(t[2]), v)
-    bstop = findlast(t -> !isgap(t[2]), v)
-    if astart === nothing || bstart === nothing
-        return nothing
-    end
-    range = if astart > bstart && astop < bstop
-        astart:astop
-    elseif astart > bstart && astop > bstop
-        bstart:bstop
-    elseif length(astart:astop) > length(bstart:bstop)
-        bstart:bstop
-    else
-        astart:astop
-    end
-    alignment_identity(view(v, range))
+    start = findfirst((a, b) -> !isgap(a) & !isgap(b), v)
+    start === nothing && return nothing
+    stop = findlast((a, b) -> !isgap(a) & !isgap(b), v)
+    alignment_identity(view(v, start:stop))
 end
 
 function alignment_identity(v::AbstractVector{Tuple{S, S}}) where {S <: BioSequences.BioSymbol}
