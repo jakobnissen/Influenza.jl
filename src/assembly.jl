@@ -383,7 +383,10 @@ function AlignedAssembly(asm::Assembly, ref::Reference, force_termini::Bool=fals
         reorder_deletions!(aln, orf)
     end
 
-    identity = alignment_identity(BA.OverlapAlignment(), aln)::Float64
+    identity = let
+        id = alignment_identity(BA.OverlapAlignment(), aln)
+        id === nothing ? 0.0 : id
+    end::Float64
 
     proteins = map(ref.proteins) do protein
         AssemblyProtein(protein, aln, ref)
