@@ -107,7 +107,7 @@ function _annotate(
         end
     end
 
-    result = Vector{Option{AlignedAssembly}}(undef, length(references))
+    result = fill(none(AlignedAssembly), length(references))
     Threads.@threads for i in eachindex(result)
         asm = assembly_vec[i]
         mref = references[i]

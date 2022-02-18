@@ -15,7 +15,7 @@ indels and substitutions for amino acid alignments.
 const DEFAULT_AA_ALN_MODEL = BA.AffineGapScoreModel(BA.BLOSUM62, gap_open=-10, gap_extend=-2)
 
 """
-    alignment_identity([m::AbstractAlignment], ::PairwiseAlignment)
+    alignment_identity(m::AbstractAlignment, ::PairwiseAlignment)
 
 Calculate the alignment identity between two sequences. Alignment is calculated as
 n_matches divided by the ungapped length of the longest seq.
@@ -26,10 +26,6 @@ If the shorter seq has zero length, or the identity is so low it cannot be
 reliably computed, returns `nothing`.
 """
 function alignment_identity end
-
-function alignment_identity(aln::BA.PairwiseAlignment{T, T}) where {T <: BioSequence}
-    alignment_identity(BA.GlobalAlignment(), aln)
-end
 
 function alignment_identity(::BA.GlobalAlignment, aln::BA.PairwiseAlignment{T, T}) where {T <: BioSequence}
     alignment_identity(collect(aln))
@@ -43,7 +39,7 @@ function alignment_identity(::BA.OverlapAlignment, aln::BA.PairwiseAlignment{T, 
     v = collect(aln)
     start = findfirst(((a, b),) -> !isgap(a) & !isgap(b), v)
     start === nothing && return nothing
-    stop = findlast(((a, b),) -> !isgap(a) & !isgap(b), v)
+    stop = findlast(((a, b),) -> !isgap(a) & !isgap(b), v)::Int # Clearly is Int if start is
     alignment_identity(view(v, start:stop))
 end
 
