@@ -34,7 +34,8 @@ end
 function alignment_identity(::BA.OverlapAlignment, aln::BA.PairwiseAlignment{T, T}) where {T <: BioSequence}
     # At lower than about 40% identity, the validity of the assumptions
     # in the algorithm begins to break down.
-    BA.count_matches(aln) / BA.count_aligned(aln) > 0.4 || return nothing
+    minlen = min(length(aln.a.seq), length(aln.b))
+    BA.count_matches(aln) / minlen > 0.4 || return nothing
 
     v = collect(aln)
     start = findfirst(((a, b),) -> !isgap(a) & !isgap(b), v)
