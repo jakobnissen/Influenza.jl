@@ -1,7 +1,7 @@
 name = "Influenza"
 uuid = "094bb4ec-04e4-4f11-bf12-e5749f7dd418"
 authors = ["Jakob Nybo Nissen <jakobnybonissen@gmail.com>"]
-version = "0.5.1"
+version = "0.5.2"
 
 [deps]
 BlastParse = "782da55a-ad1a-4c3c-92ac-19e08d16b292"

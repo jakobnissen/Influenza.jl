@@ -119,7 +119,7 @@ function AssemblyProtein(
     (identity, orfs) = if isempty(orfseq)
         none(Float64), none(Vector{UnitRange{UInt32}})
     else
-        some(alignment_identity(aaaln)::Float64), some(orfs)
+        some(alignment_identity(BA.GlobalAlignment(), aaaln)::Float64), some(orfs)
     end
     return AssemblyProtein(protein.var, orfs, identity, errors)
 end
