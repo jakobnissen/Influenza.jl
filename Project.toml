@@ -1,7 +1,7 @@
 name = "Influenza"
 uuid = "094bb4ec-04e4-4f11-bf12-e5749f7dd418"
 authors = ["Jakob Nybo Nissen <jakobnybonissen@gmail.com>"]
-version = "0.5.2"
+version = "0.5.3"
 
 [deps]
 BlastParse = "782da55a-ad1a-4c3c-92ac-19e08d16b292"
@@ -18,7 +18,8 @@ ErrorTypes = "7f495686-c6d2-4c77-9e8e-e4c865675f9d"
 julia = "1.6"
 FASTX = "1.2"
 BioSequences = "2"
-BioAlignments = "2"
+# An internal change in BioAlignments.AlignmentAnchor in 2.1.0 breaks this package
+BioAlignments = "~2.0.0"
 InfluenzaCore = "0.1.1"
 JSON3 = "1.9"
 StructTypes = "1.7"
