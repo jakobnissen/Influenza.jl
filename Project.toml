@@ -4,23 +4,22 @@ authors = ["Jakob Nybo Nissen <jakobnybonissen@gmail.com>"]
 version = "0.5.3"
 
 [deps]
-BlastParse = "782da55a-ad1a-4c3c-92ac-19e08d16b292"
-FASTX = "c2308a5c-f048-11e8-3e8a-31650f418d12"
-BioSequences = "7e6ae17a-c86d-528c-b3b9-7f778a29fe59"
 BioAlignments = "00701ae9-d1dc-5365-b64a-a3a3ebf5695e"
+BioSequences = "7e6ae17a-c86d-528c-b3b9-7f778a29fe59"
+BlastParse = "782da55a-ad1a-4c3c-92ac-19e08d16b292"
+ErrorTypes = "7f495686-c6d2-4c77-9e8e-e4c865675f9d"
+FASTX = "c2308a5c-f048-11e8-3e8a-31650f418d12"
 InfluenzaCore = "75be95bb-60e3-4423-b8b7-0f2a09593d53"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
-StructTypes = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-ErrorTypes = "7f495686-c6d2-4c77-9e8e-e4c865675f9d"
+StructTypes = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
 
 [compat]
-julia = "1.6"
-FASTX = "1.2"
-BioSequences = "2"
-# An internal change in BioAlignments.AlignmentAnchor in 2.1.0 breaks this package
 BioAlignments = "~2.0.0"
+BioSequences = "2"
+ErrorTypes = "0.5"
+FASTX = "1.2"
 InfluenzaCore = "0.1.1"
 JSON3 = "1.9"
 StructTypes = "1.7"
-ErrorTypes = "0.5"
+julia = "1.6"
