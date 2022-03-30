@@ -4,19 +4,39 @@ tovec(x) = x isa Vector ? x : vec(collect(x))
 """
     annotate(itr, json_path, subject, mmpath) -> Vector{Option{AlignedAssembly}}
 
+To run this function, `mmseqs2` must be installed and available on Julia's `PATH`
+
 Annotate `itr`, a vector of `FASTA.Record` or iterator of `Assembly`, yielding
 a vector of `Option{AlignedAssembly}`, with error values where no reference could
-be matched. `json_path` must be path to serialization and FASTA
-file produced by `Influenza.store_references.` The `subject` can be a FASTA file
-of the same sequences as the JSON, or an mmseqs database. `mmseqs` can be `nothing`,
-or the path of the mmseqs `tmp` directory, for speed.
+be matched. `json_path` must be path to a Julia serialization file of `Vector{Reference}`
+objects in JSON format, e.g. produced by `Influenza.store_references.`
+The `subject` can be a FASTA file of the same sequences as the JSON, or an mmseqs database.
+`mmseqs` can be `nothing`, or the path of the mmseqs `tmp` directory, for speed.
 It is recommended that then references broadly represent various clades,
 so a relatively close hit can be found.
 
 # Extended help
-This function works by using running `blastn` in a temporary directory and
-parsing the output. Hence, `blastn` must be available on Julia's `PATH`. It is
-fairly slow for hundreds of sequences, using >100 ms per seq.
+This function works by using running `mmseqs2` in a temporary directory and
+parsing the output. Hence, `mmseqs` must be available on Julia's `PATH`.
+
+For more details on how to run this, see the Documentation page under "Influenza.jl"
+
+# Examples:
+```
+julia> using Influenza, ErrorTypes
+
+julia> annots = Influenza.annotate(
+    records, # Vector{FASTA.Record}
+    "/tmp/refs.json",
+    "/tmp/refs.fna",
+    nothing
+);
+
+julia> passed = unwrap.(filter(!is_error, annots));
+
+julia> typeof(passed)
+Vector{Option{AlignedAssembly}} (alias for Array{Result{AlignedAssembly, Nothing}, 1})
+```
 """
 function annotate end
 
