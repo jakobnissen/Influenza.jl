@@ -61,7 +61,7 @@ struct ErrorLowIdentity <: InfluenzaError
 end
 
 function Base.print(io::IO, x::ErrorLowIdentity)
-    percent = round(x.identity * 100, digits=1)
+    percent = round(x.identity * 100; digits=1)
     print(io, "Identity to reference low at ", percent, " %")
 end
 
@@ -80,9 +80,12 @@ struct ErrorInsignificant <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorInsignificant)
-    print(io,
-        "Sequence has ", x.n_insignificant, " insignificant ",
-        (isone(x.n_insignificant) ? "base" : "bases")
+    print(
+        io,
+        "Sequence has ",
+        x.n_insignificant,
+        " insignificant ",
+        (isone(x.n_insignificant) ? "base" : "bases"),
     )
 end
 
@@ -92,9 +95,12 @@ struct ErrorAmbiguous <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorAmbiguous)
-    print(io,
-        "Sequence has ", x.n_ambiguous, " ambiguous ",
-        (isone(x.n_ambiguous) ? "base" : "bases")
+    print(
+        io,
+        "Sequence has ",
+        x.n_ambiguous,
+        " ambiguous ",
+        (isone(x.n_ambiguous) ? "base" : "bases"),
     )
 end
 
@@ -123,7 +129,7 @@ struct ErrorAssemblyNotConverged <: SegmentError
 end
 
 function Base.print(io::IO, x::ErrorAssemblyNotConverged)
-    percent = round(x.identity * 100, digits=1)
+    percent = round(x.identity * 100; digits=1)
     print(io, "Assembly not converged, at ", percent, " % identity")
 end
 
@@ -142,16 +148,18 @@ end
 
 function Base.print(io::IO, x::ErrorNoTermini)
     fst = x.missfive ? "5'" : "3'"
-    print(io,
-        "Missing conserved termini at ", fst,
+    print(
+        io,
+        "Missing conserved termini at ",
+        fst,
         (x.missfive & x.missthree) ? " and 3'" : "",
-        " end"
+        " end",
     )
 end
 
 "Sequence is flanked by invalid sequences - probably linkers or primers"
 struct ErrorLinkerContamination <: SegmentError
-    fiveprime:: Union{Nothing, UInt32}
+    fiveprime::Union{Nothing, UInt32}
     threeprime::Union{Nothing, UInt32}
 
     function ErrorLinkerContamination(fiveprime, threeprime)
@@ -198,9 +206,7 @@ struct ErrorFrameShift <: ProteinError
     indel::Indel
 end
 
-function Base.print(io::IO, x::ErrorFrameShift)
-    print(io, "Frameshift: ", indel_message(x.indel))
-end
+Base.print(io::IO, x::ErrorFrameShift) = print(io, "Frameshift: ", indel_message(x.indel))
 
 "An indel is too big to be biologically plausible, or needs special attention"
 struct ErrorIndelTooBig <: ProteinError
@@ -217,10 +223,12 @@ struct ErrorFivePrimeDeletion <: ProteinError
 end
 
 function Base.print(io::IO, x::ErrorFivePrimeDeletion)
-    print(io,
-        "Deletion of ", length(x.indel),
+    print(
+        io,
+        "Deletion of ",
+        length(x.indel),
         (isone(length(x.indel)) ? " base" : " bases"),
-        " at 5' end"
+        " at 5' end",
     )
 end
 
@@ -237,9 +245,13 @@ end
 function Base.print(io::IO, x::ErrorEarlyStop)
     print(
         io,
-        "Protein stops early at segment pos ", x.observed_pos,
-        " after ", x.observed_naa, " aa, reference is ",
-        x.expected_naa, " aa"
+        "Protein stops early at segment pos ",
+        x.observed_pos,
+        " after ",
+        x.observed_naa,
+        " aa, reference is ",
+        x.expected_naa,
+        " aa",
     )
 end
 
@@ -254,18 +266,22 @@ end
 function Base.print(io::IO, x::ErrorLateStop)
     print(
         io,
-        "Protein stops late at segment pos ", x.observed_pos,
-        " after ", x.observed_naa, " aa, reference stops at ",
-        x.expected_pos, " after ", x.expected_naa, " aa"
+        "Protein stops late at segment pos ",
+        x.observed_pos,
+        " after ",
+        x.observed_naa,
+        " aa, reference stops at ",
+        x.expected_pos,
+        " after ",
+        x.expected_naa,
+        " aa",
     )
 end
 
 "ORF runs over edge of DNA sequence"
 struct ErrorNoStop <: ProteinError end
 
-function Base.print(io::IO, x::ErrorNoStop)
-    print(io, "No stop codon")
-end
+Base.print(io::IO, x::ErrorNoStop) = print(io, "No stop codon")
 
 "Length of coding sequence is not divisible by 3."
 struct ErrorCDSNotDivisible <: ProteinError

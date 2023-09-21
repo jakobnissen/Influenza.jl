@@ -4,7 +4,8 @@
 Affine Gap Score model with parameters empirically chosen to strike a sensible balance between
 indels and substitutions for DNA alignments.
 """
-const DEFAULT_DNA_ALN_MODEL = BA.AffineGapScoreModel(BA.EDNAFULL, gap_open=-25, gap_extend=-2)
+const DEFAULT_DNA_ALN_MODEL =
+    BA.AffineGapScoreModel(BA.EDNAFULL; gap_open=-25, gap_extend=-2)
 
 """
     DEFAULT_AA_ALN_MODEL
@@ -12,7 +13,8 @@ const DEFAULT_DNA_ALN_MODEL = BA.AffineGapScoreModel(BA.EDNAFULL, gap_open=-25, 
 Affine Gap Score model with parameters empirically chosen to strike a sensible balance between
 indels and substitutions for amino acid alignments.
 """
-const DEFAULT_AA_ALN_MODEL = BA.AffineGapScoreModel(BA.BLOSUM62, gap_open=-10, gap_extend=-2)
+const DEFAULT_AA_ALN_MODEL =
+    BA.AffineGapScoreModel(BA.BLOSUM62; gap_open=-10, gap_extend=-2)
 
 """
     alignment_identity(m::AbstractAlignment, ::PairwiseAlignment)
@@ -27,11 +29,17 @@ reliably computed, returns `nothing`.
 """
 function alignment_identity end
 
-function alignment_identity(::BA.GlobalAlignment, aln::BA.PairwiseAlignment{T, T}) where {T <: BioSequence}
+function alignment_identity(
+    ::BA.GlobalAlignment,
+    aln::BA.PairwiseAlignment{T, T},
+) where {T <: BioSequence}
     alignment_identity(collect(aln))
 end
 
-function alignment_identity(::BA.OverlapAlignment, aln::BA.PairwiseAlignment{T, T}) where {T <: BioSequence}
+function alignment_identity(
+    ::BA.OverlapAlignment,
+    aln::BA.PairwiseAlignment{T, T},
+) where {T <: BioSequence}
     # At lower than about 40% identity, the validity of the assumptions
     # in the algorithm begins to break down.
     minlen = min(length(aln.a.seq), length(aln.b))
@@ -44,7 +52,9 @@ function alignment_identity(::BA.OverlapAlignment, aln::BA.PairwiseAlignment{T, 
     alignment_identity(view(v, start:stop))
 end
 
-function alignment_identity(v::AbstractVector{Tuple{S, S}}) where {S <: BioSequences.BioSymbol}
+function alignment_identity(
+    v::AbstractVector{Tuple{S, S}},
+) where {S <: BioSequences.BioSymbol}
     n_ident = len_query = len_subject = 0
     for (seqnt, refnt) in v
         n_ident += seqnt == refnt
@@ -55,7 +65,6 @@ function alignment_identity(v::AbstractVector{Tuple{S, S}}) where {S <: BioSeque
     iszero(len_longest) && return nothing
     return n_ident / len_longest
 end
-
 
 """
     ha0_cleavage(::LongAminoAcidSeq)
@@ -72,19 +81,25 @@ julia> ha0_cleavage(aa"LATGLRNSPLREKRRKRGLFGAIAGFIEGGW")
 ```
 """
 function ha0_cleavage(
-    seq::LongAminoAcidSeq
+    seq::LongAminoAcidSeq,
 )::Tuple{Union{Nothing, LongAminoAcidSeq}, Union{Nothing, Maybe, Bool}}
     motif = cleavage_motif(seq)
     # A nothing here means the motif was not properly detected
     motif === nothing && return (nothing, nothing)
-    seq, pos = motif 
-    return seq, is_leading_hpai(seq[pos-5:pos-1])
+    seq, pos = motif
+    return seq, is_leading_hpai(seq[(pos - 5):(pos - 1)])
 end
 
 # Nothing if there is no motif, else (seq, pos_of_cleaving_R)
 function cleavage_motif(seq::LongAminoAcidSeq)::Union{Nothing, Tuple{LongAminoAcidSeq, Int}}
-    model = AffineGapScoreModel(BLOSUM62, gap_open=-10, gap_extend=-2)
-    aln = pairalign(SemiGlobalAlignment(), seq, aa"LATGLRNSPLREKRRKRGLFGAIAGFIEGGW", model).aln
+    model = AffineGapScoreModel(BLOSUM62; gap_open=-10, gap_extend=-2)
+    aln =
+        pairalign(
+            SemiGlobalAlignment(),
+            seq,
+            aa"LATGLRNSPLREKRRKRGLFGAIAGFIEGGW",
+            model,
+        ).aln
     site = AminoAcid[]
     refpos = 0
     for (q, r) in aln
@@ -93,7 +108,7 @@ function cleavage_motif(seq::LongAminoAcidSeq)::Union{Nothing, Tuple{LongAminoAc
     end
     motif = LongAminoAcidSeq(site)
     pos = findfirst(biore"[RK]GLF"aa, motif)
-    
+
     # If the motif is not there, return nothing
     pos === nothing && return nothing
 

@@ -86,7 +86,7 @@ function _annotate(
     mm_tmpdir::AbstractString,
 )
     # Check presence of mmseqs
-    run(pipeline(`which mmseqs`, stdout=devnull))
+    run(pipeline(`which mmseqs`; stdout=devnull))
 
     # Write FASTA to temp file. We name the records by index, e.g. 1, 2, 3...
     (tmp_path, tmp_file) = mktemp(tmp_dir)
@@ -142,18 +142,18 @@ function mmseqs_search(
     target::AbstractString,
     result::AbstractString,
     tmpdir::AbstractString,
-    stdout::AbstractString
+    stdout::AbstractString,
 )
     # Search type 3 is nucleotide, the rest means "fast but insensitive".
     cmd = `mmseqs easy-search $query $target $result $tmpdir
     --search-type 3 --exact-kmer-matching 1 -s 1
     --format-output "query,target,bits,qlen,alnlen,pident"`
-    run(pipeline(cmd, stdout=stdout))
+    run(pipeline(cmd; stdout=stdout))
 end
 
 @eval $(BlastParse.gen_blastparse_code(
     (:qacc, :sacc, :bitscore, :qlen, :length, :pident),
-    :parse_blast_io
+    :parse_blast_io,
 ))
 
 function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
@@ -167,7 +167,7 @@ function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
     end
 
     foreach(values(byquery)) do hits
-        sort!(hits, by=x -> x.bitscore, rev=true)
+        sort!(hits; by=x -> x.bitscore, rev=true)
     end
 
     # Get best hits
@@ -180,7 +180,7 @@ function parse_blastout(io::IO, lenratio::Real)::Dict{Int, Option{String}}
                 result[parse(Int, hit.qacc)] = some(String(hit.sacc))
                 break
             end
-        haskey(result, query) || (result[query] = none(String))
+            haskey(result, query) || (result[query] = none(String))
         end
     end
     return result

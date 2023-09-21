@@ -10,9 +10,20 @@ using FASTX: FASTA
 using InfluenzaCore: Segment, Protein, Segments, SeroType, Proteins, source
 using StructTypes: StructTypes # for JSON (de)serialization
 using JSON3: JSON3
-using BioSequences: BioSequences, LongDNASeq, LongAminoAcidSeq, NucleotideSeq,
-    BioSequence, DNACodon, @mer_str, isgap, @aa_str, @biore_str, NucleicAcidAlphabet,
-    DNA, DNA_Gap
+using BioSequences:
+    BioSequences,
+    LongDNASeq,
+    LongAminoAcidSeq,
+    NucleotideSeq,
+    BioSequence,
+    DNACodon,
+    @mer_str,
+    isgap,
+    @aa_str,
+    @biore_str,
+    NucleicAcidAlphabet,
+    DNA,
+    DNA_Gap
 using BioAlignments: BioAlignments
 using Printf: Printf, @sprintf
 using BlastParse: BlastParse
@@ -52,9 +63,7 @@ for T in (:Sample, :Clade)
 
         Base.parse(::Type{$T}, s::AbstractString) = $T(s)
 
-        function $T(s::AbstractString)
-            $T(convert(String, s))
-        end
+        $T(s::AbstractString) = $T(convert(String, s))
 
         Base.nameof(x::$T) = x.name
         Base.hash(x::$T, h::UInt) = hash(nameof(x), hash($T, h))
@@ -82,7 +91,7 @@ julia> try_parseout_suffix(Segment, "xxx", '_') === nothing
 true
 ```
 """
-function try_parseout_suffix(::Type{T}, s::AbstractString, sep::Char) where T
+function try_parseout_suffix(::Type{T}, s::AbstractString, sep::Char) where {T}
     p = findlast(==(sep), s)
     p === nothing && return nothing
     val = tryparse(T, SubString(s, nextind(s, p):lastindex(s)))
@@ -91,7 +100,7 @@ function try_parseout_suffix(::Type{T}, s::AbstractString, sep::Char) where T
 end
 
 "Like `try_parseout_suffix`, but errors instead of returning `nothing`"
-function parseout_suffix(::Type{T}, s::AbstractString, sep::Char) where T
+function parseout_suffix(::Type{T}, s::AbstractString, sep::Char) where {T}
     pair = try_parseout_suffix(T, s, sep)
     if pair === nothing
         error("Expected String * $sep * $T, got \"", s, '\"')
@@ -157,24 +166,19 @@ Loads a JSON file created by `store_references`. If the version number of the
 Influenza package used to serialize the JSON is not compatible with the version
 number of `Influenza` used to load, throw an error.
 """
-function load_references(file::AbstractString)
-    open(file) do io
+load_references(file::AbstractString) = open(file) do io
         JSON3.read(io, Vector{Reference})
     end
-end
 
 export TERMINAL_INFLUENZA_5,
     TERMINAL_INFLUENZA_3,
-
     Sample,
     Clade,
     Assembly,
     AssemblyProtein,
     Reference,
     AlignedAssembly,
-
     groupby,
-
     translate_reference,
     translate_proteins,
     alignment_identity,
@@ -182,7 +186,6 @@ export TERMINAL_INFLUENZA_5,
     store_references,
     load_references,
     annotate,
-
     try_parseout_suffix,
     parseout_suffix,
     split_segment,
@@ -190,6 +193,11 @@ export TERMINAL_INFLUENZA_5,
     split_clade,
 
     # Exports from InfluenzaCore
-    Segment, Segments, SeroType, Proteins, Protein, source
+    Segment,
+    Segments,
+    SeroType,
+    Proteins,
+    Protein,
+    source
 
 end # module

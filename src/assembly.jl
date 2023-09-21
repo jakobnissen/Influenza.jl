@@ -13,7 +13,7 @@ StructTypes.StructType(::Type{ReferenceProtein}) = StructTypes.Struct()
 function ReferenceProtein(
     protein::Protein,
     orfs::Vector{<:UnitRange{<:Unsigned}},
-    seq::NucleotideSeq
+    seq::NucleotideSeq,
 )
     issorted(orfs) || sort!(orfs)
     seqlen = length(seq)
@@ -67,11 +67,15 @@ function Assembly(name::AbstractString, seq::BioSequence{<:NucleicAcidAlphabet})
         convert(String, name),
         convert(LongDNASeq, seq),
         none(Segment),
-        none(BitVector)
+        none(BitVector),
     )
 end
 
-function Assembly(record::FASTA.Record, segment::Union{Segment, Nothing}, check_significance::Bool=true)
+function Assembly(
+    record::FASTA.Record,
+    segment::Union{Segment, Nothing},
+    check_significance::Bool=true,
+)
     itr = (i in UInt8('a'):UInt8('z') for i in @view record.data[record.sequence])
     insignificant = check_significance && any(itr) ? some(BitVector(itr)) : none(BitVector)
     name = let
@@ -97,7 +101,7 @@ end
 function AssemblyProtein(
     protein::ReferenceProtein,
     aln::BA.PairwiseAlignment{LongDNASeq, LongDNASeq},
-    ref::Reference
+    ref::Reference,
 )
     coding_mask = falses(length(ref.seq))
     for orf in protein.orfs
@@ -106,11 +110,11 @@ function AssemblyProtein(
 
     orfseq, orfs, errors, indels = compare_proteins_in_alignment(protein, coding_mask, aln)
     remainder = rem(length(orfseq), 3)
-    iszero(remainder) || resize!(orfseq, length(orfseq)-remainder)
+    iszero(remainder) || resize!(orfseq, length(orfseq) - remainder)
     aaseq = BioSequences.translate(orfseq)
-    ref_aas = (i for (i,n) in zip(ref.seq, coding_mask) if n)
+    ref_aas = (i for (i, n) in zip(ref.seq, coding_mask) if n)
     # Last 3 nts are the stop codon
-    refaa = BioSequences.translate(LongDNASeq(collect(ref_aas)[1:end-3]))
+    refaa = BioSequences.translate(LongDNASeq(collect(ref_aas)[1:(end - 3)]))
     aaaln = BA.pairalign(BA.GlobalAlignment(), aaseq, refaa, DEFAULT_AA_ALN_MODEL).aln
     @assert aaaln !== nothing
 
@@ -135,7 +139,8 @@ end
 # It's clear the indel is misplaced.
 function reorder_deletions!(aln::BA.PairwiseAlignment, p::Integer, start::Bool)
     anchors = aln.a.aln.anchors
-    anchorpos = searchsortedfirst(anchors, p, by=a -> a isa BA.AlignmentAnchor ? a.refpos : a)
+    anchorpos =
+        searchsortedfirst(anchors, p; by=a -> a isa BA.AlignmentAnchor ? a.refpos : a)
     anchor = anchors[anchorpos]
     # Whether we should move bases from before deletion or after deletion.
     # we move bases from outside the ORF.
@@ -158,16 +163,16 @@ function reorder_deletions!(aln::BA.PairwiseAlignment, p::Integer, start::Bool)
 
     # Check if the modified alignment has as many matches as the old one
     query = if start
-        aln.a.seq[next.seqpos - n_move+1 : next.seqpos]
+        aln.a.seq[(next.seqpos - n_move + 1):(next.seqpos)]
     else
-        aln.a.seq[anchor.seqpos+1:anchor.seqpos+n_move]
+        aln.a.seq[(anchor.seqpos + 1):(anchor.seqpos + n_move)]
     end
     ref1 = if start
-        aln.b[next.refpos - n_move+1 : next.refpos]
+        aln.b[(next.refpos - n_move + 1):(next.refpos)]
     else
-        aln.b[anchor.refpos+1 : anchor.refpos+n_move]
+        aln.b[(anchor.refpos + 1):(anchor.refpos + n_move)]
     end
-    ref2 = aln.b[p-n_move+1:p]
+    ref2 = aln.b[(p - n_move + 1):p]
     if count(Base.splat(==), zip(query, ref1)) > count(Base.splat(==), zip(query, ref2))
         return nothing
     end
@@ -175,12 +180,12 @@ function reorder_deletions!(aln::BA.PairwiseAlignment, p::Integer, start::Bool)
     anchors[anchorpos] = BA.AlignmentAnchor(
         anchor.seqpos + n_move * delta,
         anchor.refpos + n_move * delta,
-        BA.OP_DELETE
+        BA.OP_DELETE,
     )
     anchors[anchorpos + delta] = BA.AlignmentAnchor(
         next.seqpos + n_move * delta,
         next.refpos + n_move * delta,
-        next.op
+        next.op,
     )
     return nothing
 end
@@ -210,7 +215,7 @@ and the referece segment that contains that protein.
 function compare_proteins_in_alignment(
     protein::ReferenceProtein,
     coding_mask::BitVector,
-    aln::BA.PairwiseAlignment{LongDNASeq, LongDNASeq}
+    aln::BA.PairwiseAlignment{LongDNASeq, LongDNASeq},
 )::Tuple{LongDNASeq, Vector{UnitRange{UInt32}}, Vector{ProteinError}, Vector{Indel}}
     nucleotides = sizehint!(DNA[], 1200)
     last_coding_ref_pos = last(last(protein.orfs))
@@ -234,11 +239,7 @@ function compare_proteins_in_alignment(
             fiveprime_truncated += is_coding
         else
             if !iszero(fiveprime_truncated)
-                indel = Indel(
-                    UInt32(ref_pos - n_deletions):UInt32(ref_pos - 1),
-                    0,
-                    true
-                )
+                indel = Indel(UInt32(ref_pos - n_deletions):UInt32(ref_pos - 1), 0, true)
                 push!(errors, ErrorFivePrimeDeletion(indel))
             end
             fiveprime_truncated = 0
@@ -280,7 +281,7 @@ function compare_proteins_in_alignment(
                 indel = Indel(
                     UInt32(ref_pos - n_deletions):UInt32(ref_pos - 1),
                     seg_pos - 1,
-                    true
+                    true,
                 )
                 push!(indels, indel)
                 if !iszero(length(indel) % 3)
@@ -300,7 +301,7 @@ function compare_proteins_in_alignment(
             indel = Indel(
                 UInt32(seg_pos - n_insertions):UInt32(seg_pos - 1),
                 ref_pos - 1,
-                false
+                false,
             )
             push!(indels, indel)
             if !iszero(length(indel) % 3)
@@ -324,7 +325,10 @@ function compare_proteins_in_alignment(
                 expected_stop = unwrap(maybe_expected_stop)
                 if expected_stop != seg_pos
                     @assert seg_pos > expected_stop
-                    push!(errors, ErrorLateStop(expected_stop, seg_pos, expected_n_aa, n_aa))
+                    push!(
+                        errors,
+                        ErrorLateStop(expected_stop, seg_pos, expected_n_aa, n_aa),
+                    )
                 end
             end
             break
@@ -344,7 +348,6 @@ function compare_proteins_in_alignment(
     dnaseq = LongDNASeq(nucleotides)
     return dnaseq, orfs, errors, indels
 end
-
 
 """
     AlignedAssembly(::Assembly, ::Reference, force_termini=false)
@@ -415,17 +418,9 @@ end
 
 function Reference(x::AlignedAssembly)
     proteins = map(x.proteins) do protein
-        ReferenceProtein(
-            protein.variant,
-            unwrap(protein.orfs)
-        )
+        ReferenceProtein(protein.variant, unwrap(protein.orfs))
     end
-    Reference(
-        x.assembly.name,
-        x.reference.segment,
-        x.assembly.seq,
-        proteins
-    )
+    Reference(x.assembly.name, x.reference.segment, x.assembly.seq, proteins)
 end
 
 """
@@ -440,12 +435,7 @@ function translate_reference(x::AlignedAssembly)
     proteins = map(x.proteins) do protein
         ReferenceProtein(protein.var, unwrap(protein.orfs))
     end
-    return Reference(
-        x.assembly.name,
-        x.reference.segment,
-        x.assembly.seq,
-        proteins
-    )
+    return Reference(x.assembly.name, x.reference.segment, x.assembly.seq, proteins)
 end
 
 """
@@ -488,16 +478,22 @@ If `force` is `false`, return  `(nothing, nothing)`.
 function check_termini(
     aln::BA.PairwiseAlignment{<:NucleotideSeq, <:NucleotideSeq},
     force::Bool=true,
-    max_subs::Integer=2
+    max_subs::Integer=2,
 )::Tuple{Union{Nothing, ErrorNoTermini}, Union{Nothing, ErrorLinkerContamination}}
     ref = aln.b
     rng_fw = BioSequences.approxsearch(
-        ref, TERMINAL_INFLUENZA_5, max_subs, 1,
-        lastindex(TERMINAL_INFLUENZA_5)+max_subs
+        ref,
+        TERMINAL_INFLUENZA_5,
+        max_subs,
+        1,
+        lastindex(TERMINAL_INFLUENZA_5) + max_subs,
     )
     rng_rv = BioSequences.approxrsearch(
-        ref, TERMINAL_INFLUENZA_3, max_subs, lastindex(ref),
-        lastindex(ref)-lastindex(TERMINAL_INFLUENZA_3)+1-max_subs
+        ref,
+        TERMINAL_INFLUENZA_3,
+        max_subs,
+        lastindex(ref),
+        lastindex(ref) - lastindex(TERMINAL_INFLUENZA_3) + 1 - max_subs,
     )
     if (isempty(rng_fw) | isempty(rng_rv))
         if force
@@ -518,7 +514,7 @@ function check_termini(
     if anchors[end].op === BioAlignments.OP_DELETE
         missthree = true
     elseif anchors[end].op === BioAlignments.OP_INSERT
-        contthree = UInt32(anchors[end].seqpos - anchors[end-1].seqpos)
+        contthree = UInt32(anchors[end].seqpos - anchors[end - 1].seqpos)
     end
     fst = !(missfive | missthree) ? nothing : ErrorNoTermini(missfive, missthree)
     scn = if (contfive === nothing) & (contthree === nothing)
@@ -528,9 +524,3 @@ function check_termini(
     end
     return (fst, scn)
 end
-
-
-
-
-
-        

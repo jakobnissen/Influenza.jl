@@ -30,9 +30,11 @@ export Segment
 end
 using .Segments
 
-const STRING_SEGMENT_DICT = Dict(string(s)=>s for s in instances(Segment))
+const STRING_SEGMENT_DICT = Dict(string(s) => s for s in instances(Segment))
 STRING_SEGMENT_DICT["M"] = Segments.MP
-Base.tryparse(::Type{Segment}, s::AbstractString) = get(STRING_SEGMENT_DICT, strip(s), nothing)
+function Base.tryparse(::Type{Segment}, s::AbstractString)
+    get(STRING_SEGMENT_DICT, strip(s), nothing)
+end
 function Base.parse(::Type{Segment}, s::AbstractString)
     seg = tryparse(Segment, s)
     seg === nothing ? throw(ArgumentError("Cannot parse as Segment: \"$s\"")) : seg
@@ -100,13 +102,15 @@ export Protein
 end
 using .Proteins
 
-Base.tryparse(::Type{Protein}, s::AbstractString) = get(Proteins._STR_PROTEINVARIANT, strip(s), nothing)
+function Base.tryparse(::Type{Protein}, s::AbstractString)
+    get(Proteins._STR_PROTEINVARIANT, strip(s), nothing)
+end
 function Base.parse(::Type{Protein}, s::AbstractString)
     p = tryparse(Protein, s)
     p === nothing ? throw(ArgumentError("Cannot parse as Protein: \"$s\"")) : p
 end
 
-const PROTEIN_TO_SEGMENT = Tuple(UInt8[0,1,1,1,2,2,3,4,5,5,6,6,6,6,7,7,7])
+const PROTEIN_TO_SEGMENT = Tuple(UInt8[0, 1, 1, 1, 2, 2, 3, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7])
 @assert length(PROTEIN_TO_SEGMENT) == length(instances(Protein))
 @assert maximum(PROTEIN_TO_SEGMENT) == length(instances(Segment)) - 1
 
